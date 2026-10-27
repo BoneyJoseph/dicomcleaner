@@ -17,7 +17,7 @@ public final class Cleaner {
     @FunctionalInterface public interface Progress { void update(String stage, int done, int total); }
     public record Instance(Path source, Path importRoot, Path relativePath, String sha256, String sop, String sopClass, String study,
                            String series, String patientKey, String patientName, String patientId,
-                           String modality, int instanceNumber, int frames, String description,
+                           String modality, int seriesNumber, int instanceNumber, int frames, String description,
                            String problem, LocalDate studyDate) {
         public boolean supported() { return problem.isEmpty(); }
         @Override public String toString() { return String.format("%04d", instanceNumber) + "  " + source.getFileName(); }
@@ -42,11 +42,12 @@ public final class Cleaner {
         public final Map<String,Integer> operations;
         public int unresolvedReferences;
         public boolean referencesAcknowledged;
+        public boolean requiresReclean;
         Batch(Path staging, Policy.Options options, String reason, Map<String,Integer> operations) {
             this.staging = staging; this.options = options; this.exceptionReason = reason; this.operations = operations;
         }
         public boolean exportReady() {
-            return !outputs.isEmpty() && outputs.stream().allMatch(o -> o.reviewed) &&
+            return !requiresReclean && !outputs.isEmpty() && outputs.stream().allMatch(o -> o.reviewed) &&
                 (unresolvedReferences == 0 || referencesAcknowledged);
         }
         @Override public void close() throws IOException { DicomIO.deleteTree(staging); }
@@ -95,7 +96,7 @@ public final class Cleaner {
                 String patientKey = id + "\u0000" + Policy.value(l,0x00100021) + "\u0000" + name;
                 instances.add(new Instance(path,importRoots.get(path),importRoots.get(path).relativize(path),digest,Policy.value(l,0x00080018),sopClass,
                     Policy.value(l,0x0020000d),Policy.value(l,0x0020000e),patientKey,name,id,
-                    Policy.value(l,0x00080060),Attribute.getSingleIntegerValueOrDefault(l,TagFromName.InstanceNumber,0),
+                    Policy.value(l,0x00080060),Attribute.getSingleIntegerValueOrDefault(l,TagFromName.SeriesNumber,0),Attribute.getSingleIntegerValueOrDefault(l,TagFromName.InstanceNumber,0),
                     Math.max(1,Attribute.getSingleIntegerValueOrDefault(l,TagFromName.NumberOfFrames,1)),
                     Policy.value(l,0x0008103e),problem,date));
             } catch (Exception e) {
@@ -104,6 +105,7 @@ public final class Cleaner {
                 issues.add("Could not parse: " + path.getFileName());
             }
         }
+        instances.sort(Comparator.comparing(Instance::patientKey).thenComparing(Instance::study).thenComparingInt(Instance::seriesNumber).thenComparing(Instance::series).thenComparingInt(Instance::instanceNumber).thenComparing(Instance::source));
         return new Scan(List.copyOf(instances),skipped,List.copyOf(issues));
     }
     public static Batch prepare(List<Instance> inputs, Policy.Options options, String reason,

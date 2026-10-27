@@ -59,6 +59,20 @@ public final class EngineTest {
             AttributeList matrixRegistration=new AttributeList();sequence(matrixRegistration,0x0070030a,matrix);sequence(item,0x00700309,matrixRegistration);items.add(item);
         }sequence(r,0x00700308,items.toArray(AttributeList[]::new));return r;
     }
+    static AttributeList reportFixture()throws Exception{
+        byte[] bytes;
+        try(org.apache.pdfbox.pdmodel.PDDocument document=new org.apache.pdfbox.pdmodel.PDDocument();java.io.ByteArrayOutputStream buffer=new java.io.ByteArrayOutputStream()){
+            for(int n=1;n<=2;n++){
+                org.apache.pdfbox.pdmodel.PDPage page=new org.apache.pdfbox.pdmodel.PDPage();document.addPage(page);
+                try(org.apache.pdfbox.pdmodel.PDPageContentStream content=new org.apache.pdfbox.pdmodel.PDPageContentStream(document,page)){
+                    content.beginText();content.setFont(new org.apache.pdfbox.pdmodel.font.PDType1Font(org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName.HELVETICA),18);content.newLineAtOffset(55,700);content.showText("SYNTHETIC TREATMENT REPORT - page "+n);content.newLineAtOffset(0,-40);content.showText("Patient: Synthetic Zebra / TESTMRN778899");content.endText();
+                }
+            }
+            document.save(buffer);bytes=buffer.toByteArray();
+        }
+        AttributeList l=image(3,false);l.remove(TagFromName.PixelData);value(l,0x00080016,SOPClass.EncapsulatedPDFStorage);value(l,0x00080060,"DOC");value(l,0x0020000e,"2.25.1000032345678909");number(l,0x00200011,9);
+        OtherByteAttribute doc=new OtherByteAttribute(Policy.tag(0x00420011));doc.setValues(bytes);l.put(doc);value(l,0x00420012,"application/pdf");return l;
+    }
     static void write(AttributeList l,Path p)throws Exception{Files.createDirectories(p.getParent());DicomIO.write(l,p,TransferSyntax.ExplicitVRLittleEndian);}
     public static void main(String[] args)throws Exception{
         Path root=Files.createTempDirectory("bnel-synthetic-tests-");
@@ -84,6 +98,7 @@ public final class EngineTest {
                 for(Cleaner.Output o:batch.outputs)if(DicomIO.isRegistration(o.input.sopClass()))check(frameUids.containsAll(DicomIO.frameUids(DicomIO.read(o.file).list())),"REG frame references match CT/MR");
                 expect(IllegalArgumentException.class,()->Cleaner.export(batch,root.resolve("blocked"),new Cleaner.ExportOptions(false,false,true,false),PROGRESS,()->false),"unreviewed export denied");
                 for(Cleaner.Output o:batch.outputs)o.reviewed=true;
+                batch.requiresReclean=true;expect(IllegalArgumentException.class,()->Cleaner.export(batch,root.resolve("removed-instance"),new Cleaner.ExportOptions(false,false,true,false),PROGRESS,()->false),"file exclusion blocks a previously approved batch");batch.requiresReclean=false;
                 Path out=Cleaner.export(batch,root.resolve("export"),new Cleaner.ExportOptions(false,true,true,false),PROGRESS,()->false);
                 check(Files.isRegularFile(out.resolve("DICOMDIR")),"DICOMDIR written");AttributeList dir=DicomIO.read(out.resolve("DICOMDIR")).list();
                 int fileReferences=0;for(DicomIO.Row row:DicomIO.rows(dir))if(Policy.key(row.attribute().getTag())==0x00041500){check(Files.isRegularFile(out.resolve(row.value().replace('\\','/'))),"DICOMDIR points to exported file");fileReferences++;}check(fileReferences==3,"all instances included in DICOMDIR");
@@ -120,6 +135,26 @@ public final class EngineTest {
             }
             Map<String,ScanLabels.Labels> unsafeLabel=Map.of("2.25.1000032345678902",new ScanLabels.Labels("T1 TESTMRN778899","",""));
             expect(java.io.IOException.class,()->Cleaner.prepare(scan.instances(),OPTIONS,"",new IdentifierPolicy(),unsafeLabel,PROGRESS,()->false),"residual check rejects identifier in reviewed label");
+            AttributeList reportDoc=reportFixture();try(ReportPreview preview=ReportPreview.open(reportDoc)){
+                check(preview.pages()==2,"embedded PDF page count");check(preview.page(0).getWidth()>500&&preview.page(1).getHeight()>500,"PDF pages render within app");
+            }
+            Path disposalRoot=root.resolve("disposal"),first=disposalRoot.resolve("first.dcm"),second=disposalRoot.resolve("second.dcm");write(image(1,false),first);write(image(2,true),second);
+            List<Cleaner.Instance> disposal=Cleaner.scan(List.of(disposalRoot),PROGRESS,()->false).instances();
+            Path fakeBin=root.resolve("test-recycle-bin");Files.createDirectory(fakeBin);
+            FileDisposal.Result removed=FileDisposal.recycle(List.of(disposal.get(0)),p->{Files.move(p,fakeBin.resolve(p.getFileName()));return true;});
+            check(removed.moved().size()==1&&removed.failed().isEmpty(),"only selected original moved");check(Files.exists(second)&&Files.exists(fakeBin.resolve("first.dcm")),"other files retained and moved file recoverable");
+            FileDisposal.Result refused=FileDisposal.recycle(List.of(disposal.get(1)),p->false);check(refused.failed().size()==1&&Files.exists(second),"no permanent deletion when trash refuses");
+            Files.writeString(second,"changed after import",StandardOpenOption.APPEND);
+            final boolean[] called={false};FileDisposal.Result changed=FileDisposal.recycle(List.of(disposal.get(1)),p->{called[0]=true;return true;});check(!called[0]&&changed.failed().size()==1&&Files.exists(second),"changed source cannot be deleted by stale selection");
+            if(System.getProperty("os.name").startsWith("Windows")){
+                check(NativeRecycle.AVAILABLE,"bundled native recycler loads");
+                Path nativeFile=root.resolve("native-recycle.dcm");write(image(1,false),nativeFile);String hash=DicomIO.hash(nativeFile);
+                String recycled=NativeRecycle.move(nativeFile.toString());
+                check(recycled!=null&&!Files.exists(nativeFile)&&Files.exists(Path.of(recycled)),"Windows Shell returns an actual recoverable Recycle Bin item");
+                check(hash.equals(DicomIO.hash(Path.of(recycled))),"recycled original bytes intact");
+                check(NativeRecycle.move(root.toString())==null&&Files.exists(root),"recycler refuses directories");
+                check(NativeRecycle.move("\\\\unavailable-bnel-test\\share\\file.dcm")==null,"recycler refuses network paths");
+            }
             // Changes after import must invalidate the snapshot.
             Path compressed=root.resolve("compressed/jpeg.dcm");AttributeList jpeg=image(7,false);
             value(jpeg,0x00080016,SOPClass.SecondaryCaptureImageStorage);number(jpeg,0x00280100,8);number(jpeg,0x00280101,8);number(jpeg,0x00280102,7);

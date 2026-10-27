@@ -43,8 +43,18 @@ public final class GuiTest {
             edt(()->{review.textClear.doClick();review.faceClear.doClick();review.approve.doClick();return null;});waitFor(()->!review.busy&&review.index==1,"review next instance");
             edt(()->{review.textClear.doClick();review.faceClear.doClick();review.approve.doClick();review.close.doClick();return null;});waitFor(()->a.export.isEnabled(),"review gates export");
             edt(()->{a.patientId.setText("BNEL-002");return null;});EngineTest.check(edt(()->a.batch==null&&!a.export.isEnabled()),"changed policy invalidates prior approvals");
+            // Inspect reports before cleaning; navigation continues across individual files and PDF pages.
+            Path reports=root.resolve("reports");EngineTest.write(EngineTest.image(1,false),reports.resolve("1.dcm"));EngineTest.write(EngineTest.image(2,true),reports.resolve("2.dcm"));EngineTest.write(EngineTest.reportFixture(),reports.resolve("report.dcm"));
+            edt(()->{a.clear.doClick();a.importPaths(List.of(reports));return null;});waitFor(()->a.active==null&&a.instances.size()==3,"report import");
+            SwingUtilities.invokeLater(a.review::doClick);waitFor(()->Arrays.stream(Window.getWindows()).anyMatch(w->w instanceof ReviewDialog&&w.isVisible()),"source viewer");
+            ReviewDialog sourceReview=edt(()->(ReviewDialog)Arrays.stream(Window.getWindows()).filter(w->w instanceof ReviewDialog&&w.isVisible()).findFirst().orElseThrow());
+            waitFor(()->!sourceReview.busy&&sourceReview.image!=null,"source image render");edt(()->{sourceReview.canvas.dispatchEvent(new java.awt.event.MouseWheelEvent(sourceReview.canvas,java.awt.event.MouseEvent.MOUSE_WHEEL,System.currentTimeMillis(),0,100,100,0,false,java.awt.event.MouseWheelEvent.WHEEL_UNIT_SCROLL,1,1));return null;});waitFor(()->!sourceReview.busy&&sourceReview.index==1,"wheel-style navigation crosses single-frame files");
+            edt(()->{sourceReview.queueStep(1);return null;});waitFor(()->!sourceReview.busy&&sourceReview.report!=null,"embedded PDF renders");
+            screenshot(sourceReview,screenshots.resolve("embedded-report-review.png"));edt(()->{sourceReview.queueStep(1);return null;});waitFor(()->!sourceReview.busy&&sourceReview.frame.getValue()==2,"PDF next page");
+            edt(()->{sourceReview.markedCurrent.doClick();sourceReview.removeMarked.doClick();sourceReview.close.doClick();return null;});waitFor(()->a.instances.size()==2,"excluded report removed from session");
+            EngineTest.check(Files.exists(reports.resolve("report.dcm")),"exclusion keeps original report intact");EngineTest.check(edt(()->a.batch==null&&!a.export.isEnabled()),"exclusion requires fresh clean and reference checks");
             edt(()->{a.dicomdir.setSelected(true);a.persist(true);a.clear.doClick();a.closeWindow();return null;});
-            System.out.println("PASS: headful import, union, clean/review actions, privacy gates, resize, portrait layout and screenshots");
+            System.out.println("PASS: headful import, union, clean/review actions, privacy gates, resize, portrait layout, report pages, mouse wheel, file exclusion and screenshots");
         }catch(Throwable failure){if(app!=null)try{screenshot(app,screenshots.resolve("failure.png"));}catch(Exception ignored){}failure.printStackTrace();System.exit(1);
         }finally{for(Window w:Window.getWindows())w.dispose();DicomIO.deleteTree(root);}
         System.exit(0);

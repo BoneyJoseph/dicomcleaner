@@ -10,7 +10,7 @@ ARCHIVES = {
     'binaryrelease': '3b6c05abcf271aea226790f34655cc4091f1fa6943dda2ed225baadcaf748f74',
     'dependencyrelease': 'c2b45f23758d2ef8663aba6f03cec2ea5635ee498381fb700b53ccc4e1c0a51a',
 }
-JARS = ('pixelmed.jar', 'pixelmed_imageio.jar', 'pixelmed_codec.jar', 'vecmath1.2-1.14.jar')
+JARS = ('pixelmed.jar', 'pixelmed_imageio.jar', 'pixelmed_codec.jar', 'vecmath1.2-1.14.jar', 'pdfbox-app-3.0.8.jar')
 
 def run(args):
     subprocess.run([str(x) for x in args], cwd=ROOT, check=True)
@@ -54,18 +54,43 @@ def dependencies():
                     else:
                         target = notices / f'PixelMed-{kind}-README.txt'
                     target.write_bytes(tar.extractfile(member).read())
+    pdf = VENDOR / 'pdfbox-app-3.0.8.jar'
+    if not pdf.exists():
+        with urllib.request.urlopen('https://downloads.apache.org/pdfbox/3.0.8/pdfbox-app-3.0.8.jar', timeout=90) as response, pdf.open('wb') as out:
+            shutil.copyfileobj(response, out)
+    if hashlib.sha512(pdf.read_bytes()).hexdigest() != '768847238f683568507bf73570a2b6fedcbe58b25c7b4f97fba536ba110b290fe96ba065aed58629d41fb94857d76bc1978c2f31d294b553c69f287f71ee9600':
+        pdf.unlink(missing_ok=True)
+        raise RuntimeError('PDFBox checksum mismatch; build stopped.')
     for name in JARS:
         if not (VENDOR / name).is_file():
             raise RuntimeError(f'Missing dependency {name}')
         with zipfile.ZipFile(VENDOR / name) as z:
-            for entry in ('COPYRIGHT', 'README'):
+            for entry in ('COPYRIGHT', 'README', 'META-INF/LICENSE', 'META-INF/NOTICE'):
                 if entry in z.namelist():
-                    (notices / f'{name}-{entry}.txt').write_bytes(z.read(entry))
+                    (notices / f'{name}-{entry.replace(chr(47), chr(45))}.txt').write_bytes(z.read(entry))
     (notices / 'dependency-sha256.json').write_text(json.dumps({p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in VENDOR.glob('*.jar')}, indent=2))
     return notices
 
+def native_recycle():
+    if os.name != 'nt':
+        return None
+    native = BUILD / 'native'; native.mkdir(exist_ok=True)
+    vswhere = Path(os.environ.get('ProgramFiles(x86)', 'C:/Program Files (x86)')) / 'Microsoft Visual Studio/Installer/vswhere.exe'
+    installation = subprocess.check_output([str(vswhere), '-latest', '-products', '*', '-requires', 'Microsoft.VisualStudio.Component.VC.Tools.x86.x64', '-property', 'installationPath'], text=True).strip()
+    if not installation:
+        raise RuntimeError('Visual Studio C++ build tools are required on the build machine.')
+    devcmd = Path(installation) / 'Common7/Tools/VsDevCmd.bat'
+    jdk = Path(os.environ['JAVA_HOME'])
+    command = subprocess.list2cmdline(['cl.exe', '/nologo', '/std:c++17', '/EHsc', '/MT', '/O2', '/LD', '/DUNICODE', '/D_UNICODE', '/I'+str(jdk/'include'), '/I'+str(jdk/'include/win32'), str(ROOT/'native/recycle.cpp'), '/link', '/OUT:'+str(native/'bnel-recycle.dll'), 'shell32.lib', 'ole32.lib', 'uuid.lib'])
+    script = native / 'compile.cmd'
+    script.write_text('@echo off\ncall "' + str(devcmd) + '" -arch=x64 -host_arch=x64 >nul\nif errorlevel 1 exit /b %errorlevel%\n' + command + '\n', encoding='utf-8')
+    subprocess.run(['cmd.exe', '/d', '/c', str(script)], cwd=native, check=True)
+    return native
+
 def build(test=True, gui=False, package=False):
     notices = dependencies()
+    native = native_recycle()
+    native_option = ['-Dbnel.nativeDir='+str(native)] if native else []
     classes = BUILD / 'classes'
     shutil.rmtree(classes, ignore_errors=True); classes.mkdir(parents=True)
     cp = os.pathsep.join(str(VENDOR / x) for x in JARS)
@@ -81,9 +106,9 @@ def build(test=True, gui=False, package=False):
         run([*java_tool('javac'), '--release', '17', '-encoding', 'UTF-8', '-cp', app_cp, '-d', test_classes, *sorted((ROOT / 'test').rglob('*.java'))])
         test_cp = str(test_classes) + os.pathsep + app_cp
         if test:
-            run([*java_tool('java'), '-Djava.awt.headless=true', '-cp', test_cp, 'org.bnel.dicom.EngineTest'])
+            run([*java_tool('java'), *native_option, '-Djava.awt.headless=true', '-cp', test_cp, 'org.bnel.dicom.EngineTest'])
         if gui:
-            run([*java_tool('java'), '-cp', test_cp, 'org.bnel.dicom.GuiTest', BUILD / 'screenshots'])
+            run([*java_tool('java'), *native_option, '-cp', test_cp, 'org.bnel.dicom.GuiTest', BUILD / 'screenshots'])
     app = BUILD / 'app'
     shutil.rmtree(app, ignore_errors=True); app.mkdir()
     manifest = BUILD / 'MANIFEST.MF'
@@ -91,6 +116,8 @@ def build(test=True, gui=False, package=False):
     run([*java_tool('jar'), '--create', '--file', app / 'BNEL-Dicom-Cleaner.jar', '--manifest', manifest, '-C', classes, '.'])
     for name in JARS:
         shutil.copy2(VENDOR / name, app / name)
+    if native:
+        shutil.copy2(native / 'bnel-recycle.dll', app / 'bnel-recycle.dll')
     if package:
         if platform.system() != 'Windows':
             raise RuntimeError('Windows packages must be built on Windows. Use the supplied GitHub Actions workflow.')

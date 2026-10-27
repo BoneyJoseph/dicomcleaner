@@ -196,8 +196,12 @@ public final class Main extends JFrame {
         }catch(Exception e){Theme.error(this,e);}
     }
     void reviewImages(){
-        if(batch!=null){new ReviewDialog(this,batch).setVisible(true);if(current!=null)display(current);refreshUnion(true);updateActions();}
-        else if(current!=null)new ReviewDialog(this,current).setVisible(true);
+        if(instances.isEmpty())return;
+        ReviewDialog dialog=batch!=null&&(current==null||outputFor(current)!=null)?new ReviewDialog(this,batch):new ReviewDialog(this,List.copyOf(instances),current);dialog.setVisible(true);
+        if(!dialog.excluded.isEmpty()||(batch!=null&&batch.requiresReclean)){
+            instances.removeIf(i->dialog.excluded.contains(i.source()));labels.clear();invalidateBatch();rebuildTree();refreshUnion(false);
+            status.setText(dialog.excluded.size()+" files removed from this session; clean the remaining selection again");
+        }else{if(current!=null)display(current);refreshUnion(true);}updateActions();
     }
     void exportBatch(){
         if(batch==null)return;
@@ -240,7 +244,7 @@ public final class Main extends JFrame {
         dispose();
     }
     void settingsDialog(){
-        showText("Settings & information","BNEL Dicom Cleaner "+Policy.VERSION+"\n\nOptions and window size are remembered in:\n"+settings.path+"\n\nYour original files are never overwritten. Import additions and policy changes invalidate prior cleaning.\n\nExport hierarchy: neutral names preserve directory nesting without carrying source identifiers. Retaining original names requires a name review. DICOMDIR has short uppercase path limits.\n\nDefault policy: original identifiers/dates are removed or replaced with synthetic values; private attributes and free text are scrubbed.\n\nReview every image/frame for burned-in text and recognizable anatomy. This version includes manual monochrome blackout, not automatic facial defacing or OCR. Use a validated defacing workflow where needed before import.\n\nPixelMed 20260916; DICOM PS3.15 2026d policy data. See bundled notices and user guide. Research validation release; no HIPAA certification claim.");
+        showText("Settings & information","BNEL Dicom Cleaner "+Policy.VERSION+"\n\nOptions and window size are remembered in:\n"+settings.path+"\n\nCleaning and export never overwrite originals. In the viewer, exclusion removes files from this session; Move originals to Recycle Bin explicitly removes selected source files. File-set and policy changes invalidate prior cleaning.\n\nExport hierarchy: neutral names preserve directory nesting without carrying source identifiers. Retaining original names requires a name review. DICOMDIR has short uppercase path limits.\n\nDefault policy: original identifiers/dates are removed or replaced with synthetic values; private attributes and free text are scrubbed.\n\nReview every image/frame for burned-in text and recognizable anatomy. This version includes manual monochrome blackout, not automatic facial defacing or OCR. Use a validated defacing workflow where needed before import.\n\nPixelMed 20260916; Apache PDFBox 3.0.8 for read-only embedded PDF preview; DICOM PS3.15 2026d policy data. See bundled notices and user guide. Research validation release; no HIPAA certification claim.");
     }
     void showText(String title,String text){JTextArea area=new JTextArea(text,24,90);area.setEditable(false);area.setLineWrap(true);area.setWrapStyleWord(true);area.setCaretPosition(0);JOptionPane.showMessageDialog(this,new JScrollPane(area),title,JOptionPane.INFORMATION_MESSAGE);}
     void showDifferences(){
