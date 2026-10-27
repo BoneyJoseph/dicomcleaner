@@ -8,6 +8,7 @@ final class Theme {
     static final Color INK=new Color(31,42,69), MUTED=new Color(79,94,116), BLUE=new Color(40,98,213),
         PURPLE=new Color(71,92,179), BORDER=new Color(195,205,218), PALE=new Color(233,238,244);
     static void install() {
+        try{UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());}catch(Exception ignored){}
         Font font=new Font("Segoe UI",Font.PLAIN,14);
         for (Object k:UIManager.getDefaults().keySet().toArray()) if(k.toString().endsWith(".font")) UIManager.put(k,font);
         UIManager.put("Label.foreground",INK);UIManager.put("TextField.foreground",INK);

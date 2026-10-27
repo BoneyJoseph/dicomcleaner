@@ -11,12 +11,12 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Compile, synthetic integration tests, UI checks, portable package
@@ -32,9 +32,16 @@ jobs:
           $app = Start-Process -FilePath $exe -PassThru
           try {
             $deadline = (Get-Date).AddSeconds(30)
-            do { Start-Sleep -Milliseconds 300; $app.Refresh() } while (-not $app.HasExited -and $app.MainWindowHandle -eq 0 -and (Get-Date) -lt $deadline)
-            if ($app.HasExited -or $app.MainWindowTitle -ne 'BNEL Dicom Cleaner') { throw 'Packaged GUI did not open' }
-          } finally { if (-not $app.HasExited) { $app.CloseMainWindow() | Out-Null; $app.WaitForExit(5000) | Out-Null; if (-not $app.HasExited) { $app.Kill() } } }
+            # The jpackage launcher can create a child process that owns the actual window.
+            do {
+              Start-Sleep -Milliseconds 300
+              $windows = @(Get-Process -Name 'BNEL Dicom Cleaner' -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -eq 'BNEL Dicom Cleaner' })
+            } while ($windows.Count -eq 0 -and (Get-Date) -lt $deadline)
+            if ($windows.Count -eq 0) { Get-Process -Name 'BNEL Dicom Cleaner' -ErrorAction SilentlyContinue | Format-List Id,ProcessName,MainWindowTitle; throw 'Packaged GUI did not open' }
+            Write-Output 'Verified bundled runtime opens the native GUI without a console.'
+          } finally {
+            Get-Process -Name 'BNEL Dicom Cleaner' -ErrorAction SilentlyContinue | ForEach-Object { $_.CloseMainWindow() | Out-Null; if (-not $_.WaitForExit(5000)) { $_.Kill() } }
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: BNEL-Dicom-Cleaner-0.1.0-Windows-x64

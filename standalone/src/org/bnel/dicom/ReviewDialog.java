@@ -39,7 +39,7 @@ final class ReviewDialog extends JDialog {
         root.add(Theme.label(batch==null?"Original images · read only":"Image & metadata review",23,true),BorderLayout.NORTH);
         files.setFixedCellHeight(29);files.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);refreshList();
         files.addListSelectionListener(e->{if(!e.getValueIsAdjusting()&&!setting&&!busy)load(files.getSelectedIndex());});
-        JScrollPane left=new JScrollPane(files);left.setPreferredSize(new Dimension(235,400));
+        JScrollPane left=Theme.scroll(files);left.setPreferredSize(new Dimension(235,400));left.setMinimumSize(new Dimension(180,200));
         JPanel preview=new JPanel(new BorderLayout(8,8));preview.setOpaque(false);
         JScrollPane imageScroll=new JScrollPane(canvas);imageScroll.getViewport().setBackground(Color.BLACK);canvas.scroll=imageScroll;preview.add(imageScroll);
         JPanel controls=new JPanel();controls.setLayout(new BoxLayout(controls,BoxLayout.Y_AXIS));controls.setOpaque(false);
@@ -55,7 +55,9 @@ final class ReviewDialog extends JDialog {
         controls.add(Theme.row(draw,Theme.button("Clear rectangles",false,()->{canvas.areas.clear();canvas.repaint();}),redact));preview.add(controls,BorderLayout.SOUTH);
         JTabbedPane tabs=new JTabbedPane();tabs.addTab("Image review",preview);
         JSplitPane tags=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,Theme.card("Original · every tag",sourceTags),Theme.card("Cleaned · every tag",cleanTags));tags.setResizeWeight(.5);tabs.addTab("Full metadata",tags);
-        JSplitPane main=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,left,tabs);main.setResizeWeight(.18);root.add(main);
+        tabs.setMinimumSize(new Dimension(520,300));JSplitPane main=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,left,tabs);main.setResizeWeight(.18);root.add(main);
+        SwingUtilities.invokeLater(()->main.setDividerLocation(235));
+        addComponentListener(new ComponentAdapter(){public void componentResized(ComponentEvent e){int direction=getHeight()>getWidth()?JSplitPane.VERTICAL_SPLIT:JSplitPane.HORIZONTAL_SPLIT;if(tags.getOrientation()!=direction){tags.setOrientation(direction);tags.setDividerLocation(.5);}root.revalidate();}});
         JPanel bottom=new JPanel();bottom.setLayout(new BoxLayout(bottom,BoxLayout.Y_AXIS));bottom.setOpaque(false);
         textClear.setOpaque(false);faceClear.setOpaque(false);bottom.add(textClear);bottom.add(faceClear);
         bottom.add(new JLabel("Review every frame at useful window settings. Head CT/MRI may need external 3D defacing before import."));

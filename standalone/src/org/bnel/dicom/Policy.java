@@ -135,7 +135,7 @@ public final class Policy {
         put(list, 0x00100020, options.patientId);
         put(list, 0x00100030, "");
         put(list, 0x00100040, "");
-        for(int k:new int[]{0x00080050,0x00080090,0x00200010})if(list.get(tag(k))==null)put(list,k,"");
+        for(int k:new int[]{0x00080050,0x00080070,0x00080090,0x00200010})if(list.get(tag(k))==null)put(list,k,"");
         // Pixel review is still outstanding at this stage. Set YES only during approved export.
         put(list, 0x00120062, "NO");
         put(list, 0x00120063, "BNEL " + VERSION + " metadata; " + options.dateMode.name());
@@ -149,7 +149,7 @@ public final class Policy {
             String vr = new String(a.getVR(), StandardCharsets.US_ASCII);
             String action = RULES.getOrDefault(k, "");
             if(options.minimal&&!ESSENTIAL.contains(k)) {list.remove(t);count("removed_nonessential_metadata");continue;}
-            if (t.isPrivate() || group == 0 || group == 2 || group == 4 || group == 0x0012 ||
+            if (t.isPrivate() || group == 0 || group == 2 || group == 4 || (group == 0x0012 && IdentifierPolicy.category(list,a)!=IdentifierPolicy.Category.TRIAL) ||
                     (group & 0xff00) == 0x5000 || (group & 0xff00) == 0x6000 ||
                     group == 0x0400 || group == 0x4ffe || group == 0xfffa ||
                     t.getElement() == 0 || k == 0xfffcfffc || vr.equals("UN") ||

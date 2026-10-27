@@ -65,6 +65,7 @@ public final class Main extends JFrame {
         JPanel op=new JPanel(new BorderLayout(0,8));op.setOpaque(false);op.add(originalName,BorderLayout.NORTH);op.add(original);
         JPanel cp=new JPanel(new BorderLayout(0,8));cp.setOpaque(false);cp.add(cleanedName,BorderLayout.NORTH);cp.add(cleaned);
         metadataSplit=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,Theme.card("Original",op),Theme.card("Cleaned",cp));metadataSplit.setResizeWeight(.5);metadataSplit.setBorder(null);metadataSplit.setContinuousLayout(true);
+        metadataSplit.getLeftComponent().setMinimumSize(new Dimension(220,160));metadataSplit.getRightComponent().setMinimumSize(new Dimension(220,160));
         metadataSplit.setDividerLocation(settings.integer("metadataDivider",560));
         metadataTabs.addTab("Instance comparison",metadataSplit);metadataTabs.addTab("All original metadata",allOriginal);metadataTabs.addTab("All cleaned metadata",allCleaned);
         outerSplit=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,Theme.card("Source",source),metadataTabs);outerSplit.setResizeWeight(.20);outerSplit.setBorder(null);outerSplit.setContinuousLayout(true);outerSplit.setDividerLocation(settings.integer("sourceDivider",275));
@@ -116,8 +117,10 @@ public final class Main extends JFrame {
         addComponentListener(new ComponentAdapter(){public void componentResized(ComponentEvent e){
             int orientation=getHeight()>getWidth()&&getWidth()<1550?JSplitPane.VERTICAL_SPLIT:JSplitPane.HORIZONTAL_SPLIT;
             if(metadataSplit.getOrientation()!=orientation){metadataSplit.setOrientation(orientation);metadataSplit.setDividerLocation(.5);}
+            else if(metadataSplit.getDividerLocation()<200||metadataSplit.getDividerLocation()>metadataSplit.getWidth()-220)metadataSplit.setDividerLocation(.5);
             body.revalidate();
         }});
+        SwingUtilities.invokeLater(()->metadataSplit.setDividerLocation(.5));
         initializing=false;updateActions();
     }
     void updateActions(){

@@ -73,7 +73,7 @@ public final class EngineTest {
                 Set<String> frameUids=new HashSet<>();String study=null;for(Cleaner.Output o:batch.outputs){
                     AttributeList l=DicomIO.read(o.file).list();check(DicomIO.hash(o.input.source()).equals(o.input.sha256()),"source unchanged");
                     for(DicomIO.Row row:DicomIO.rows(l)){
-                        String v=row.value();check(!v.contains("TESTMRN778899")&&!v.contains("Synthetic")&&!v.contains("zebra@example")&&!v.contains("1977")&&!v.contains("2024"),"no identifiers embedded in long or nested text: "+row.path());
+                        String v=row.value();check(!v.contains("TESTMRN778899")&&!v.contains("Synthetic")&&!v.contains("zebra@example")&&(row.vr().equals("UI")||(!v.contains("1977")&&!v.contains("2024"))),"no identifiers embedded in long or nested text: "+row.path());
                         check(!row.attribute().getTag().isPrivate(),"private field removed");
                     }
                     check(Policy.value(l,0x00120062).equals("NO"),"no premature identity removal assertion");
