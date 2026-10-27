@@ -1,0 +1,660 @@
+# DICOM PS3.15 2026d Table E.1-1 (basic profile action data)
+# https://dicom.nema.org/medical/dicom/2026d/output/chtml/part15/chapter_E.html
+# Retrieved 2026-10-26; source SHA-256 cb214710fce798ed3688b4cb1d6b2d62ebd254e6946aa3efb3fc14038a41d58d
+# tag	action	name
+00080050	Z	Accession Number
+00184000	X	Acquisition Comments
+00400556	X	Acquisition Context Description
+00400555	X/Z	Acquisition Context Sequence
+00080022	X/Z	Acquisition Date
+0008002A	X/Z/D	Acquisition DateTime
+00181400	X/D	Acquisition Device Processing Description
+001811BB	D	Acquisition Field of View Label
+00189424	X	Acquisition Protocol Description
+00080032	X/Z	Acquisition Time
+00080017	U	Acquisition UID
+00404035	X	Actual Human Performers Sequence
+001021B0	X	Additional Patient History
+0040A353	X	Address (Trial)
+00380010	X	Admission ID
+00380020	X	Admitting Date
+00081084	X	Admitting Diagnoses Code Sequence
+00081080	X	Admitting Diagnoses Description
+00380021	X	Admitting Time
+00001000	X	Affected SOP Instance UID
+00102110	X	Allergies
+0040B034	X	Annotation DateTime
+006A0006	X	Annotation Group Description
+006A0005	D	Annotation Group Label
+006A0003	D	Annotation Group UID
+00440004	X	Approval Status DateTime
+40000010	X	Arbitrary
+00440104	D	Assertion DateTime
+00440105	X	Assertion Expiration DateTime
+04000562	D	Attribute Modification DateTime
+0040A078	X	Author Observer Sequence
+22000005	X/Z	Barcode Value
+300A00C3	X	Beam Description
+300C0127	D	Beam Hold Transition DateTime
+300A00DD	X	Bolus Description
+00101081	X	Branch of Service
+0014407E	X	Calibration Date
+00181203	Z	Calibration DateTime
+0014407C	X	Calibration Time
+0016004D	X	Camera Owner Name
+00181007	X	Cassette ID
+04000115	D	Certificate of Signer
+04000310	X	Certified Timestamp
+003A020C	X	Channel Derivation Description
+003A0203	X	Channel Label
+00120060	Z	Clinical Trial Coordinating Center Name
+00120082	X	Clinical Trial Protocol Ethics Committee Approval Number
+00120081	D	Clinical Trial Protocol Ethics Committee Name
+00120020	D	Clinical Trial Protocol ID
+00120021	Z	Clinical Trial Protocol Name
+00120072	X	Clinical Trial Series Description
+00120071	X	Clinical Trial Series ID
+00120030	Z	Clinical Trial Site ID
+00120031	Z	Clinical Trial Site Name
+00120010	D	Clinical Trial Sponsor Name
+00120040	D	Clinical Trial Subject ID
+00120042	D	Clinical Trial Subject Reading ID
+00120051	X	Clinical Trial Time Point Description
+00120050	Z	Clinical Trial Time Point ID
+00400310	X	Comments on Radiation Dose
+00400280	X	Comments on the Performed Procedure Step
+300A02EB	X	Compensator Description
+00209161	U	Concatenation UID
+3010000F	Z	Conceptual Volume Combination Description
+30100017	Z	Conceptual Volume Description
+30100006	U	Conceptual Volume UID
+00403001	X	Confidentiality Constraint on Patient Data Description
+30100013	U	Constituent Conceptual Volume UID
+0008009C	Z	Consulting Physician's Name
+0008009D	X	Consulting Physician Identification Sequence
+0050001B	X	Container Component ID
+0040051A	X	Container Description
+00400512	D	Container Identifier
+00700086	X	Content Creator's Identification Code Sequence
+00700084	Z/D	Content Creator's Name
+00080023	Z/D	Content Date
+0040A730	D	Content Sequence
+00080033	Z/D	Content Time
+00080107	D	Context Group Local Version
+00080106	D	Context Group Version
+00180010	Z/D	Contrast/Bolus Agent
+00181042	X	Contrast/Bolus Start Time
+00181043	X	Contrast/Bolus Stop Time
+0018A002	X	Contribution DateTime
+0018A003	X	Contribution Description
+00102150	X	Country of Residence
+21000040	X	Creation Date
+21000050	X	Creation Time
+0040A307	X	Current Observer (Trial)
+00380300	X	Current Patient Location
+50xxxxxx	X	Curve Data
+00080025	X	Curve Date
+00080035	X	Curve Time
+0040A07C	X	Custodial Organization Sequence
+FFFCFFFC	X	Data Set Trailing Padding
+0040A121	D	Date
+0040A110	X	Date of Document or Verbal Transaction (Trial)
+00181205	X	Date of Installation
+00181200	X	Date of Last Calibration
+0018700C	X/D	Date of Last Detector Calibration
+00181204	X	Date of Manufacture
+00181012	X	Date of Secondary Capture
+0040A120	D	DateTime
+00181202	X	DateTime of Last Calibration
+00189701	D	Decay Correction DateTime
+0018937F	X	Decomposition Description
+00082111	X	Derivation Description
+21000140	D	Destination AE
+0018700A	X/D	Detector ID
+3010001B	Z	Device Alternate Identifier
+00500020	X	Device Description
+3010002D	D	Device Label
+00181000	X/Z/D	Device Serial Number
+0016004B	X	Device Setting Description
+00181002	U	Device UID
+04000105	D	Digital Signature DateTime
+FFFAFFFA	X	Digital Signatures Sequence
+04000100	U	Digital Signature UID
+00209164	U	Dimension Organization UID
+00380030	X	Discharge Date
+00380040	X	Discharge Diagnosis Description
+00380032	X	Discharge Time
+300A079A	X	Displacement Reference Label
+0040E012	X	Display URI
+4008011A	X	Distribution Address
+40080119	X	Distribution Name
+3004007F	X	Dose Calculation Model Name
+300A0016	X	Dose Reference Description
+300A0013	U	Dose Reference UID
+3010006E	U	Dosimetric Objective UID
+00686226	D	Effective DateTime
+0040A034	X	Effective Start DateTime
+0040A035	X	Effective Stop DateTime
+00420011	D	Encapsulated Document
+00189517	X/D	End Acquisition DateTime
+30100037	X	Entity Description
+30100035	D	Entity Label
+30100038	D	Entity Long Label
+30100036	X	Entity Name
+300A0676	X	Equipment Frame of Reference Description
+00120087	X	Ethics Committee Approval Effectiveness End Date
+00120086	X	Ethics Committee Approval Effectiveness Start Date
+00102160	X	Ethnic Group
+00102161	X	Ethnic Group Code Sequence
+00102162	X	Ethnic Groups
+00189804	D	Exclusion Start DateTime
+00404011	X	Expected Completion DateTime
+00080058	U	Failed SOP Instance UID List
+0070031A	U	Fiducial UID
+00402017	Z	Filler Order Number / Imaging Service Request
+003A032B	X	Filter Lookup Table Description
+0040A023	X	Findings Group Recording Date (Trial)
+0040A024	X	Findings Group Recording Time (Trial)
+30080054	X/D	First Treatment Date
+300A0196	X	Fixation Device Description
+00340002	D	Flow Identifier
+00340001	D	Flow Identifier Sequence
+3010007F	Z	Fractionation Notes
+300A0072	X	Fraction Group Description
+00189074	D	Frame Acquisition DateTime
+00209158	X	Frame Comments
+00200052	U	Frame of Reference UID
+00340007	D	Frame Origin Timestamp
+00189151	D	Frame Reference DateTime
+00189623	D	Functional Sync Pulse
+00181008	X	Gantry ID
+00100044	X	Gender Identity Code Sequence
+00100045	X	Gender Identity Comment
+00100041	X	Gender Identity Sequence
+00181005	X	Generator ID
+00160076	X	GPS Altitude
+00160075	X	GPS Altitude Ref
+0016008C	X	GPS Area Information
+0016008D	X	GPS Date Stamp
+00160088	X	GPS Dest Bearing
+00160087	X	GPS Dest Bearing Ref
+0016008A	X	GPS Dest Distance
+00160089	X	GPS Dest Distance Ref
+00160084	X	GPS Dest Latitude
+00160083	X	GPS Dest Latitude Ref
+00160086	X	GPS Dest Longitude
+00160085	X	GPS Dest Longitude Ref
+0016008E	X	GPS Differential
+0016007B	X	GPS DOP
+00160081	X	GPS Img Direction
+00160080	X	GPS Img Direction Ref
+00160072	X	GPS Latitude
+00160071	X	GPS Latitude Ref
+00160074	X	GPS Longitude
+00160073	X	GPS Longitude Ref
+00160082	X	GPS Map Datum
+0016007A	X	GPS Measure Mode
+0016008B	X	GPS Processing Method
+00160078	X	GPS Satellites
+0016007D	X	GPS Speed
+0016007C	X	GPS Speed Ref
+00160079	X	GPS Status
+00160077	X	GPS Time Stamp
+0016007F	X	GPS Track
+0016007E	X	GPS Track Ref
+00160070	X	GPS Version ID
+00700001	D	Graphic Annotation Sequence
+0072000A	D	Hanging Protocol Creation DateTime
+00181011	X	Hardcopy Creation Device ID
+00081304	X	Histological Diagnoses Code Sequence
+0040E004	X	HL7 Document Effective Time
+00404037	X	Human Performer's Name
+00404036	X	Human Performer's Organization
+00880200	X	Icon Image Sequence (see Note 11)
+00084000	X	Identifying Comments
+00204000	X	Image Comments
+00284000	X	Image Presentation Comments
+00402400	X	Imaging Service Request Comments
+003A0314	D	Impedance Measurement DateTime
+40080300	X	Impressions
+00686270	D	Information Issue DateTime
+00080015	X	Instance Coercion DateTime
+00080012	X/D	Instance Creation Date
+00080013	X/Z/D	Instance Creation Time
+00080014	U	Instance Creator UID
+04000600	X	Instance Origin Status
+00080081	X	Institution Address
+00081040	X	Institutional Department Name
+00081041	X	Institutional Department Type Code Sequence
+00080082	X/Z/D	Institution Code Sequence
+00080080	X/Z/D	Institution Name
+00189919	Z/D	Instruction Performed DateTime
+00101050	X	Insurance Plan Identification
+30100085	X	Intended Fraction Start Time
+3010004D	X/D	Intended Phase End Date
+3010004C	X/D	Intended Phase Start Date
+00401011	X	Intended Recipients of Results Identification Sequence
+300A0741	D	Interlock DateTime
+300A0742	D	Interlock Description
+300A0783	D	Interlock Origin Description
+40080112	X	Interpretation Approval Date
+40080113	X	Interpretation Approval Time
+40080111	X	Interpretation Approver Sequence
+4008010C	X	Interpretation Author
+40080115	X	Interpretation Diagnosis Description
+40080200	X	Interpretation ID
+40080202	X	Interpretation ID Issuer
+40080100	X	Interpretation Recorded Date
+40080101	X	Interpretation Recorded Time
+40080102	X	Interpretation Recorder
+4008010B	X	Interpretation Text
+4008010A	X	Interpretation Transcriber
+40080108	X	Interpretation Transcription Date
+40080109	X	Interpretation Transcription Time
+00180035	X	Intervention Drug Start Time
+00180027	X	Intervention Drug Stop Time
+00083010	U	Irradiation Event UID
+00402004	X	Issue Date of Imaging Service Request
+00380011	X	Issuer of Admission ID
+00380014	X	Issuer of Admission ID Sequence
+00120022	X	Issuer of Clinical Trial Protocol ID
+00120073	X	Issuer of Clinical Trial Series ID
+00120032	X	Issuer of Clinical Trial Site ID
+00120041	X	Issuer of Clinical Trial Subject ID
+00120043	X	Issuer of Clinical Trial Subject Reading ID
+00120055	X	Issuer of Clinical Trial Time Point ID
+00100021	X	Issuer of Patient ID
+00380061	X	Issuer of Service Episode ID
+00380064	X	Issuer of Service Episode ID Sequence
+00400513	Z	Issuer of the Container Identifier Sequence
+00400562	Z	Issuer of the Specimen Identifier Sequence
+00402005	X	Issue Time of Imaging Service Request
+22000002	X/Z	Label Text
+00281214	U	Large Palette Color Lookup Table UID
+001021D0	X	Last Menstrual Date
+0016004F	X	Lens Make
+00160050	X	Lens Model
+00160051	X	Lens Serial Number
+0016004E	X	Lens Specification
+00500021	X	Long Device Description
+04000404	X	MAC
+0016002B	X	Maker Note
+0018100B	U	Manufacturer's Device Class UID
+30100043	Z	Manufacturer's Device Identifier
+00020003	U	Media Storage SOP Instance UID
+00102000	X	Medical Alerts
+00101090	X	Medical Record Locator
+00101080	X	Military Rank
+04000550	X	Modified Attributes Sequence
+00203403	X	Modified Image Date
+00203406	X	Modified Image Description
+00203405	X	Modified Image Time
+00203401	X	Modifying Device ID
+04000563	D	Modifying System
+0040B03F	X	Montage Channel Label
+0040B03B	X	Montage Name
+30080056	X/D	Most Recent Treatment Date
+0018937B	X	Multi-energy Acquisition Description
+003A0020	X	Multiplex Group Label
+003A0310	U	Multiplex Group UID
+00081060	X	Name of Physician(s) Reading Study
+00401010	X	Names of Intended Recipients of Results
+00100012	X	Name to Use
+00100013	X	Name to Use Comment
+00081000	X	Network ID
+04000552	X	Nonconforming Data Element Value
+04000551	X	Nonconforming Modified Attributes Sequence
+0040A192	X	Observation Date (Trial)
+0040A032	X/D	Observation DateTime
+0040A033	X	Observation Start DateTime
+0040A402	U	Observation Subject UID (Trial)
+0040A193	X	Observation Time (Trial)
+0040A171	U	Observation UID
+00102180	X	Occupation
+00081072	X/D	Operator Identification Sequence
+00081070	X/Z/D	Operators' Name
+00402010	X	Order Callback Phone Number
+00402011	X	Order Callback Telecom Information
+00402008	X	Order Entered By
+00402009	X	Order Enterer's Location
+04000561	X	Original Attributes Sequence
+21000070	X	Originator
+00120023	X	Other Clinical Trial Protocol IDs Sequence
+00101000	X	Other Patient IDs
+00101002	X	Other Patient IDs Sequence
+00101001	X	Other Patient Names
+60xx4000	X	Overlay Comments
+60xx3000	X	Overlay Data
+00080024	X	Overlay Date
+00080034	X	Overlay Time
+300A0760	D	Override DateTime
+00281199	U	Palette Color Lookup Table UID
+0040A07A	X	Participant Sequence
+0040A082	Z	Participation DateTime
+00101040	X	Patient's Address
+00101010	X	Patient's Age
+00100030	Z	Patient's Birth Date
+00101005	X	Patient's Birth Name
+00100032	X	Patient's Birth Time
+00380400	X	Patient's Institution Residence
+00100050	X	Patient's Insurance Plan Code Sequence
+00101060	X	Patient's Mother's Birth Name
+00100010	Z	Patient's Name
+00100101	X	Patient's Primary Language Code Sequence
+00100102	X	Patient's Primary Language Modifier Code Sequence
+001021F0	X	Patient's Religious Preference
+00100040	Z	Patient's Sex
+00102203	X/Z	Patient's Sex Neutered
+00101020	X	Patient's Size
+00102155	X	Patient's Telecom Information
+00102154	X	Patient's Telephone Numbers
+00101030	X	Patient's Weight
+00104000	X	Patient Comments
+00100020	Z/D	Patient ID
+300A0794	X	Patient Setup Photo Description
+300A0650	U	Patient Setup UID
+00380500	X	Patient State
+00401004	X	Patient Transport Arrangements
+300A0792	X	Patient Treatment Preparation Method Description
+300A078E	X	Patient Treatment Preparation Procedure Parameter Description
+00400243	X	Performed Location
+00400254	X	Performed Procedure Step Description
+00400250	X	Performed Procedure Step End Date
+00404051	X	Performed Procedure Step End DateTime
+00400251	X	Performed Procedure Step End Time
+00400253	X	Performed Procedure Step ID
+00400244	X	Performed Procedure Step Start Date
+00404050	X	Performed Procedure Step Start DateTime
+00400245	X	Performed Procedure Step Start Time
+00400241	X	Performed Station AE Title
+00404030	X	Performed Station Geographic Location Code Sequence
+00400242	X	Performed Station Name
+00404028	X	Performed Station Name Code Sequence
+00081050	X	Performing Physician's Name
+00081052	X	Performing Physician Identification Sequence
+00401102	X	Person's Address
+00401104	X	Person's Telecom Information
+00401103	X	Person's Telephone Numbers
+00401101	D	Person Identification Code Sequence
+0040A123	D	Person Name
+00100011	X	Person Names to Use Sequence
+00081048	X	Physician(s) of Record
+00081049	X	Physician(s) of Record Identification Sequence
+00081062	X	Physician(s) Reading Study Identification Sequence
+40080114	X	Physician Approving Interpretation
+00402016	Z	Placer Order Number / Imaging Service Request
+00181004	X	Plate ID
+30020123	X	Position Acquisition Template Description
+30020121	X	Position Acquisition Template Name
+001021C0	X	Pregnancy Status
+00400012	X	Pre-Medication
+300A000E	X	Prescription Description
+3010007B	Z	Prescription Notes
+30100081	Z	Prescription Notes Sequence
+00700082	X	Presentation Creation Date
+00700083	X	Presentation Creation Time
+00701101	U	Presentation Display Collection UID
+00701102	U	Presentation Sequence Collection UID
+00081302	X	Primary Diagnosis Code Sequence
+00081301	X	Principal Diagnosis Code Sequence
+30100061	X	Prior Treatment Dose Description
+00404052	X	Procedure Step Cancellation DateTime
+0044000B	X	Product Expiration DateTime
+00100015	X	Pronoun Code Sequence
+00100016	X	Pronoun Comment
+00181030	X/D	Protocol Name
+00081088	X	Pyramid Description
+00200027	X	Pyramid Label
+00080019	U	Pyramid UID
+300A0619	D	Radiation Dose Identification Label
+300A0623	D	Radiation Dose In-Vivo Measurement Label
+300A067D	Z	Radiation Generation Mode Description
+300A067C	D	Radiation Generation Mode Label
+00181078	X	Radiopharmaceutical Start DateTime
+00181072	X	Radiopharmaceutical Start Time
+00181079	X	Radiopharmaceutical Stop DateTime
+00181073	X	Radiopharmaceutical Stop Time
+300C0113	X	Reason for Omission Description
+0040100A	X	Reason for Requested Procedure Code Sequence
+00321030	X	Reason for Study
+3010005C	Z	Reason for Superseding
+04000565	D	Reason for the Attribute Modification
+00402001	X	Reason for the Imaging Service Request
+00401002	X	Reason for the Requested Procedure
+00321066	X	Reason for Visit
+00321067	X	Reason for Visit Code Sequence
+00741234	X	Receiving AE
+300A073A	D	Recorded RT Control Point DateTime
+3010000B	U	Referenced Conceptual Volume UID
+0040A13A	D	Referenced DateTime
+04000402	X	Referenced Digital Signature Sequence
+300A0083	U	Referenced Dose Reference UID
+3010006F	U	Referenced Dosimetric Objective UID
+30100031	U	Referenced Fiducials UID
+30060024	U	Referenced Frame of Reference UID
+00404023	U	Referenced General Purpose Scheduled Procedure Step Transaction UID
+00081140	X/Z/U*	Referenced Image Sequence
+0040A172	U	Referenced Observation UID (Trial)
+00380004	X	Referenced Patient Alias Sequence
+00101100	X	Referenced Patient Photo Sequence
+00081120	X	Referenced Patient Sequence
+00081111	X/Z/D	Referenced Performed Procedure Step Sequence
+04000403	X	Referenced SOP Instance MAC Sequence
+00081155	U	Referenced SOP Instance UID
+00041511	U	Referenced SOP Instance UID in File
+00081110	X/Z	Referenced Study Sequence
+300A0785	U	Referenced Treatment Position Group UID
+00080092	X	Referring Physician's Address
+00080090	Z	Referring Physician's Name
+00080094	X	Referring Physician's Telephone Numbers
+00080096	X	Referring Physician Identification Sequence
+00102152	X	Region of Residence
+300600C2	U	Related Frame of Reference UID
+00400275	X	Request Attributes Sequence
+00321070	X	Requested Contrast Agent
+00401400	X	Requested Procedure Comments
+00321060	X/Z	Requested Procedure Description
+00401001	X	Requested Procedure ID
+00401005	X	Requested Procedure Location
+00189937	X	Requested Series Description
+00001001	U	Requested SOP Instance UID
+00741236	X	Requesting AE
+00321032	X	Requesting Physician
+00321033	X	Requesting Service
+00189185	X	Respiratory Motion Compensation Technique Description
+00102299	X	Responsible Organization
+00102297	X	Responsible Person
+40084000	X	Results Comments
+40080118	X	Results Distribution List Sequence
+40080040	X	Results ID
+40080042	X	Results ID Issuer
+00080054	X	Retrieve AE Title
+300E0004	Z	Review Date
+300E0008	X/Z	Reviewer Name
+300E0005	Z	Review Time
+3006004D	X	ROI Creator Sequence
+3006002D	X	ROI DateTime
+30060028	X	ROI Description
+30060038	X	ROI Generation Description
+300600A6	Z	ROI Interpreter
+3006004E	X	ROI Interpreter Sequence
+30060026	Z	ROI Name
+3006002E	X	ROI Observation DateTime
+30060088	X	ROI Observation Description
+30060085	X	ROI Observation Label
+300A0615	Z	RT Accessory Device Slot ID
+300A0611	Z	RT Accessory Holder Slot ID
+3010005A	Z	RT Physician Intent Narrative
+300A0006	X/D	RT Plan Date
+300A0004	X	RT Plan Description
+300A0002	D	RT Plan Label
+300A0003	X	RT Plan Name
+300A0007	X/D	RT Plan Time
+30100054	D	RT Prescription Label
+300A062A	D	RT Tolerance Set Label
+30100056	X/D	RT Treatment Approach Label
+3010003B	U	RT Treatment Phase UID
+30080162	D	Safe Position Exit Date
+30080164	D	Safe Position Exit Time
+30080166	D	Safe Position Return Date
+30080168	D	Safe Position Return Time
+0038001A	X	Scheduled Admission Date
+0038001B	X	Scheduled Admission Time
+0038001C	X	Scheduled Discharge Date
+0038001D	X	Scheduled Discharge Time
+00404034	X	Scheduled Human Performers Sequence
+0038001E	X	Scheduled Patient Institution Residence
+00400006	X	Scheduled Performing Physician's Name
+0040000B	X	Scheduled Performing Physician Identification Sequence
+00400007	X	Scheduled Procedure Step Description
+00400004	X	Scheduled Procedure Step End Date
+00400005	X	Scheduled Procedure Step End Time
+00404008	X	Scheduled Procedure Step Expiration DateTime
+00400009	X	Scheduled Procedure Step ID
+00400011	X	Scheduled Procedure Step Location
+00404010	X	Scheduled Procedure Step Modification DateTime
+00400002	X	Scheduled Procedure Step Start Date
+00404005	X	Scheduled Procedure Step Start DateTime
+00400003	X	Scheduled Procedure Step Start Time
+00400001	X	Scheduled Station AE Title
+00404027	X	Scheduled Station Geographic Location Code Sequence
+00400010	X	Scheduled Station Name
+00404025	X	Scheduled Station Name Code Sequence
+00321020	X	Scheduled Study Location
+00321021	X	Scheduled Study Location AE Title
+00321000	X	Scheduled Study Start Date
+00321001	X	Scheduled Study Start Time
+00321010	X	Scheduled Study Stop Date
+00321011	X	Scheduled Study Stop Time
+00181010	X	Secondary Capture Device ID
+00081303	X	Secondary Diagnoses Code Sequence
+0040B036	X	Segment Definition DateTime
+0072005E	D	Selector AE Value
+0072005F	D	Selector AS Value
+00720061	D	Selector DA Value
+00720063	D	Selector DT Value
+00720066	D	Selector LO Value
+00720068	D	Selector LT Value
+00720065	D	Selector OB Value
+0072006A	D	Selector PN Value
+0072006C	D	Selector SH Value
+0072006E	D	Selector ST Value
+0072006B	D	Selector TM Value
+0072006D	D	Selector UN Value
+00720071	D	Selector UR Value
+00720070	D	Selector UT Value
+00080021	X/D	Series Date
+0008103E	X	Series Description
+0020000E	U	Series Instance UID
+00080031	X/D	Series Time
+00380062	X	Service Episode Description
+00380060	X	Service Episode ID
+300A01B2	X	Setup Technique Description
+00100046	X	Sex Parameters for Clinical Use Category Code Sequence
+00100042	X	Sex Parameters for Clinical Use Category Comment
+00100047	X	Sex Parameters for Clinical Use Category Reference
+00100043	X	Sex Parameters for Clinical Use Category Sequence
+300A01A6	X	Shielding Device Description
+004006FA	X	Slide Identifier
+001021A0	X	Smoking Status
+01000420	X	SOP Authorization DateTime
+00080018	U	SOP Instance UID
+30100015	U	Source Conceptual Volume UID
+0018936A	D	Source End DateTime
+00640003	U	Source Frame of Reference UID
+00340005	D	Source Identifier
+00082112	X/Z/U*	Source Image Sequence
+300A0216	X	Source Manufacturer
+04000564	Z	Source of Previous Values
+30080105	X/Z	Source Serial Number
+00189369	D	Source Start DateTime
+300A022C	D	Source Strength Reference Date
+300A022E	D	Source Strength Reference Time
+00380050	X	Special Needs
+0040050A	X	Specimen Accession Number
+00400602	X	Specimen Detailed Description
+00400551	D	Specimen Identifier
+00400610	Z	Specimen Preparation Sequence
+00400600	X	Specimen Short Description
+00400554	U	Specimen UID
+00189516	X/D	Start Acquisition DateTime
+00080055	X	Station AE Title
+00081010	X/Z/D	Station Name
+00880140	U	Storage Media File-set UID
+30060008	Z	Structure Set Date
+30060006	X	Structure Set Description
+30060002	D	Structure Set Label
+30060004	X	Structure Set Name
+30060009	Z	Structure Set Time
+00321040	X	Study Arrival Date
+00321041	X	Study Arrival Time
+00324000	X	Study Comments
+00321050	X	Study Completion Date
+00321051	X	Study Completion Time
+00080020	Z	Study Date
+00081030	X	Study Description
+00200010	Z	Study ID
+00320012	X	Study ID Issuer
+0020000D	U	Study Instance UID
+00320034	X	Study Read Date
+00320035	X	Study Read Time
+00080030	Z	Study Time
+00320032	X	Study Verified Date
+00320033	X	Study Verified Time
+00440010	X	Substance Administration DateTime
+00200200	U	Synchronization Frame of Reference UID
+300A0054	U	Table Top Position Alignment UID
+00182042	U	Target UID
+0040A354	X	Telephone Number (Trial)
+0040DB0D	U	Template Extension Creator UID
+0040DB0C	U	Template Extension Organization UID
+0040DB07	X	Template Local Version
+0040DB06	X	Template Version
+40004000	X	Text Comments
+20300020	X	Text String
+00100014	X	Third Person Pronouns Sequence
+0040A122	D	Time
+0040A112	X	Time of Document Creation or Verbal Transaction (Trial)
+00181201	X	Time of Last Calibration
+0018700E	X/D	Time of Last Detector Calibration
+00181014	X	Time of Secondary Capture
+00080201	X	Timezone Offset From UTC
+00880910	X	Topic Author
+00880912	X	Topic Keywords
+00880906	X	Topic Subject
+00880904	X	Topic Title
+00620021	U	Tracking UID
+00081195	U	Transaction UID
+00185011	X	Transducer Identification Sequence
+30080024	D	Treatment Control Point Date
+30080025	D	Treatment Control Point Time
+30080250	X/D	Treatment Date
+300A00B2	X/Z	Treatment Machine Name
+300A0608	D	Treatment Position Group Label
+300A0609	U	Treatment Position Group UID
+300A0700	U	Treatment Session UID
+30100077	X/D	Treatment Site
+300A000B	X	Treatment Sites
+3010007A	Z	Treatment Technique Notes
+30080251	X/D	Treatment Time
+300A0736	D	Treatment Tolerance Violation DateTime
+300A0734	D	Treatment Tolerance Violation Description
+0018100A	X	UDI Sequence
+0040A124	U	UID
+00700006	D	Unformatted Text Value
+00181009	X	Unique Device Identifier
+30100033	D	User Content Label
+30100034	D	User Content Long Label
+0040A352	X	Verbal Source (Trial)
+0040A358	X	Verbal Source Identifier Code Sequence (Trial)
+0040A030	D	Verification DateTime
+0040A088	Z	Verifying Observer Identification Code Sequence
+0040A075	D	Verifying Observer Name
+0040A073	D	Verifying Observer Sequence
+0040A027	D	Verifying Organization
+00384000	X	Visit Comments
+0040B020	X/D	Waveform Annotation Sequence
+003A0329	X	Waveform Filter Description
+00189371	D	X-Ray Detector ID
+00189373	X	X-Ray Detector Label
+00189367	D	X-Ray Source ID

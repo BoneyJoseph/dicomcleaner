@@ -1,0 +1,58 @@
+name: BNEL Windows portable
+on:
+  push:
+    branches: [codex/windows-standalone]
+    paths: ['standalone/**', '.github/workflows/bnel-windows.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  portable:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Compile, synthetic integration tests, UI checks, portable package
+        run: python standalone/build.py --gui-test --package
+      - name: Verify Windows GUI launcher
+        shell: pwsh
+        run: |
+          $exe = Resolve-Path 'standalone/build/dist/BNEL Dicom Cleaner/BNEL Dicom Cleaner.exe'
+          $bytes = [IO.File]::ReadAllBytes($exe)
+          $peOffset = [BitConverter]::ToInt32($bytes, 0x3c)
+          $subsystem = [BitConverter]::ToUInt16($bytes, $peOffset + 24 + 68)
+          if ($subsystem -ne 2) { throw 'Expected Windows GUI subsystem; console launcher forbidden' }
+          $app = Start-Process -FilePath $exe -PassThru
+          try {
+            $deadline = (Get-Date).AddSeconds(30)
+            # The jpackage launcher can create a child process that owns the actual window.
+            do {
+              Start-Sleep -Milliseconds 300
+              $windows = @(Get-Process -Name 'BNEL Dicom Cleaner' -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -eq 'BNEL Dicom Cleaner' })
+            } while ($windows.Count -eq 0 -and (Get-Date) -lt $deadline)
+            if ($windows.Count -eq 0) { Get-Process -Name 'BNEL Dicom Cleaner' -ErrorAction SilentlyContinue | Format-List Id,ProcessName,MainWindowTitle; throw 'Packaged GUI did not open' }
+            Write-Output 'Verified bundled runtime opens the native GUI without a console.'
+          } finally {
+            Get-Process -Name 'BNEL Dicom Cleaner' -ErrorAction SilentlyContinue | ForEach-Object { $_.CloseMainWindow() | Out-Null; if (-not $_.WaitForExit(5000)) { $_.Kill() } }
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BNEL-Dicom-Cleaner-0.1.0-Windows-x64
+          path: |
+            standalone/build/dist/*.zip
+            standalone/build/dist/*.sha256
+          if-no-files-found: error
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BNEL-UI-checks
+          path: standalone/build/screenshots/*.png
+          if-no-files-found: ignore
