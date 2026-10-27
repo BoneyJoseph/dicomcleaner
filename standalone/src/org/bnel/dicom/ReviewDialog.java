@@ -23,7 +23,8 @@ final class ReviewDialog extends JDialog {
     final JTextArea reportText=new JTextArea();
     final JCheckBox markedCurrent=new JCheckBox("Mark file (M)");
     final Set<Path> marked=new LinkedHashSet<>(),excluded=new LinkedHashSet<>(),trashed=new LinkedHashSet<>();
-    final JButton removeMarked,trashMarked,restore;
+    final JButton removeMarked,trashMarked,restore,maximize;
+    Rectangle restoreBounds;
     final javax.swing.Timer scrollTimer;
     int pendingSteps;
     double wheelRemainder;
@@ -49,7 +50,7 @@ final class ReviewDialog extends JDialog {
         this.batch=batch;this.inputs=inputs;setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);setMinimumSize(new Dimension(1000,720));
         scrollTimer=new javax.swing.Timer(35,e->drainNavigation());scrollTimer.setRepeats(false);
         Theme.Background root=new Theme.Background(new BorderLayout(10,10));root.setBorder(BorderFactory.createEmptyBorder(12,12,12,12));setContentPane(root);
-        JPanel heading=new JPanel(new BorderLayout(6,6));heading.setOpaque(false);heading.add(Theme.label(batch==null?"Original images & reports":"Image & metadata review",23,true),BorderLayout.NORTH);heading.add(fileText);root.add(heading,BorderLayout.NORTH);
+        JPanel heading=new JPanel(new BorderLayout(6,6));heading.setOpaque(false);heading.add(Theme.label(batch==null?"Original images & reports":"Image & metadata review",23,true),BorderLayout.NORTH);heading.add(fileText);maximize=Theme.button("Maximize",false,this::maximizeView);heading.add(maximize,BorderLayout.EAST);root.add(heading,BorderLayout.NORTH);
         files.setFixedCellHeight(29);files.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);refreshList();
         files.addListSelectionListener(e->{if(!e.getValueIsAdjusting()&&!setting&&!busy)load(files.getSelectedIndex());});
         JScrollPane left=Theme.scroll(files);left.setPreferredSize(new Dimension(235,400));left.setMinimumSize(new Dimension(180,200));
@@ -167,6 +168,11 @@ final class ReviewDialog extends JDialog {
         }.execute();
     }
     private void closeReview(){if(busy)return;closed=true;scrollTimer.stop();releaseImage();dispose();}
+    private void maximizeView(){
+        if(restoreBounds!=null){setBounds(restoreBounds);restoreBounds=null;maximize.setText("Maximize");return;}
+        restoreBounds=getBounds();GraphicsConfiguration configuration=getGraphicsConfiguration();Rectangle bounds=new Rectangle(configuration.getBounds());Insets insets=Toolkit.getDefaultToolkit().getScreenInsets(configuration);
+        bounds.x+=insets.left;bounds.y+=insets.top;bounds.width-=insets.left+insets.right;bounds.height-=insets.top+insets.bottom;setBounds(bounds);maximize.setText("Restore");
+    }
     private void bind(String key,Runnable action){getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(key),key);getRootPane().getActionMap().put(key,new AbstractAction(){public void actionPerformed(ActionEvent e){if(!(KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() instanceof javax.swing.text.JTextComponent))action.run();}});files.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke(key),key);files.getActionMap().put(key,getRootPane().getActionMap().get(key));}
     private void wheel(MouseWheelEvent e){if(e.isControlDown()){zoom.setValue(Math.max(25,Math.min(400,zoom.getValue()-(int)(e.getPreciseWheelRotation()*12))));}else{wheelRemainder+=e.getPreciseWheelRotation();int steps=(int)wheelRemainder;wheelRemainder-=steps;if(steps!=0)queueStep(steps);}e.consume();}
     void queueStep(int direction){pendingSteps=Math.max(-50,Math.min(50,pendingSteps+direction));scrollTimer.restart();}

@@ -39,6 +39,7 @@ public final class GuiTest {
             waitFor(()->Arrays.stream(Window.getWindows()).anyMatch(w->w instanceof ReviewDialog&&w.isVisible()),"review action opens viewer");
             ReviewDialog review=edt(()->(ReviewDialog)Arrays.stream(Window.getWindows()).filter(w->w instanceof ReviewDialog&&w.isVisible()).findFirst().orElseThrow());
             waitFor(()->!review.busy&&review.image!=null,"pixel decoder");
+            edt(()->{review.maximize.doClick();return null;});EngineTest.check(edt(()->review.restoreBounds!=null&&review.maximize.getText().equals("Restore")),"viewer maximizes on its current monitor");edt(()->{review.maximize.doClick();return null;});
             EngineTest.check(edt(()->!review.approve.isEnabled()),"approval requires assessment");screenshot(review,screenshots.resolve("image-review.png"));
             edt(()->{review.textClear.doClick();review.faceClear.doClick();review.approve.doClick();return null;});waitFor(()->!review.busy&&review.index==1,"review next instance");
             edt(()->{review.textClear.doClick();review.faceClear.doClick();review.approve.doClick();review.close.doClick();return null;});waitFor(()->a.export.isEnabled(),"review gates export");

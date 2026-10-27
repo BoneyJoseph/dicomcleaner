@@ -14,7 +14,7 @@ Extract the entire `BNEL-Dicom-Cleaner-0.1.0-Windows-x64.zip` to a writable fold
 
 ## Viewer, marking and source-file removal
 
-The viewer opens the complete imported file list for original inspection. Files are grouped by subject, study and series, then ordered by Series Number and Instance Number. The mouse wheel or Left/Right moves through frames and into the next file; Page Up/Down changes files, and Ctrl+wheel zooms. Pixel/PDF decoding runs in the background and wheel requests are coalesced. Window/level, fit, zoom, frame slider and full metadata inspection are available without extra diagnostic tools.
+The viewer opens the complete imported file list for original inspection. Files are grouped by subject, study and series, then ordered by Series Number and Instance Number. The mouse wheel or Left/Right moves through frames and into the next file; Page Up/Down changes files, and Ctrl+wheel zooms. Pixel/PDF decoding runs in the background and wheel requests are coalesced. Window/level, fit, zoom, frame slider and full metadata inspection are available without extra diagnostic tools. Maximize/Restore expands the viewer on its current monitor; panes remain resizable in portrait and landscape.
 
 Press M or use Mark file while inspecting any image or report. Marks persist as you move between files. Exclude marked from export removes the marked files from the session when the viewer closes; with no marks, it excludes the current file. Undo exclusion restores a file while the viewer is open. Originals stay intact, and excluded entries are skipped during navigation. Excluding files invalidates the entire cleaned batch and its approvals: clean the remaining set again to rebuild UID relationships and check references.
 
