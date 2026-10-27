@@ -2,6 +2,7 @@ package org.bnel.dicom;
 
 import com.pixelmed.dicom.*;
 import com.pixelmed.display.SourceImage;
+import com.pixelmed.display.WindowCenterAndWidth;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -48,7 +49,7 @@ final class ReviewDialog extends JDialog {
         next=Theme.button("Next frame",false,()->frame.setValue(Math.min(frameCount,frame.getValue()+1)));
         controls.add(Theme.row(previous,frame,next,frameText));
         zoom.setPreferredSize(new Dimension(150,24));
-        reset=Theme.button("Auto window / Fit",false,()->{if(image!=null){setting=true;width.setValue(Math.max(1d,image.getMaximum()-image.getMinimum()));level.setValue((image.getMaximum()+image.getMinimum())/2d);zoom.setValue(100);setting=false;canvas.render();}});
+        reset=Theme.button("Auto window / Fit",false,()->{if(image!=null){setting=true;double slope=image.getModalityTransform().getRescaleSlope(frame.getValue()-1),intercept=image.getModalityTransform().getRescaleIntercept(frame.getValue()-1);width.setValue(Math.max(1d,Math.abs((image.getMaximum()-image.getMinimum())*slope)));level.setValue((image.getMaximum()+image.getMinimum())/2d*slope+intercept);zoom.setValue(100);setting=false;canvas.render();}});
         controls.add(Theme.row(new JLabel("Zoom"),zoom,new JLabel("Width"),width,new JLabel("Level"),level,reset));
         draw.addActionListener(e->canvas.setCursor(Cursor.getPredefinedCursor(draw.isSelected()?Cursor.CROSSHAIR_CURSOR:Cursor.DEFAULT_CURSOR)));
         redact=Theme.button("Apply blackout to all frames",true,this::redact);
@@ -146,15 +147,12 @@ final class ReviewDialog extends JDialog {
         public Dimension getPreferredSize(){if(raw==null)return new Dimension(600,400);return new Dimension((int)(raw.getWidth()*scale()),(int)(raw.getHeight()*scale()));}
         void render(){
             if(raw==null)return;
-            if(raw.getRaster().getNumBands()>1)display=raw;
+            if(image==null||!image.isGrayscale())display=raw;
             else {
-                display=new BufferedImage(raw.getWidth(),raw.getHeight(),BufferedImage.TYPE_BYTE_GRAY);
                 double w=((Number)width.getValue()).doubleValue(),c=((Number)level.getValue()).doubleValue();
-                int bits=Attribute.getSingleIntegerValueOrDefault(attributes,TagFromName.BitsStored,16);boolean signed=image!=null&&image.isSigned(),inverse=image!=null&&image.isInverted();
-                for(int y=0;y<raw.getHeight();y++)for(int x=0;x<raw.getWidth();x++){
-                    double v=raw.getRaster().getSampleDouble(x,y,0);if(signed&&bits>0&&bits<=16&&v>=(1<<(bits-1)))v-=(1<<bits);
-                    int b=(int)Math.max(0,Math.min(255,((v-c)/w+.5)*255));display.getRaster().setSample(x,y,0,inverse?255-b:b);
-                }
+                ModalityTransform modality=image.getModalityTransform();int currentFrame=frame.getValue()-1;
+                display=WindowCenterAndWidth.applyWindowCenterAndWidthLinear(raw,c,w,image.isSigned(),image.isInverted(),
+                    modality.getRescaleSlope(currentFrame),modality.getRescaleIntercept(currentFrame),image.isPadded(),image.getPadValue(),image.getPadRangeLimit(),false);
             }revalidate();repaint();
         }
         protected void paintComponent(Graphics g){super.paintComponent(g);if(display==null){g.setColor(Color.LIGHT_GRAY);g.drawString("No image pixels · use Full metadata for registration objects",22,40);return;}

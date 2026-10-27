@@ -146,6 +146,7 @@ public final class Cleaner {
                 cancelled(cancel); progress.update("Cleaning metadata", n, inputs.size());
                 if (!DicomIO.hash(input.source).equals(input.sha256)) throw new IOException("A source file changed after import. Import it again before cleaning.");
                 DicomIO.Loaded source = DicomIO.read(input.source); AttributeList l = source.list();
+                PixelSafety.inspect(source);
                 Map<String,String> geometry = DicomIO.geometry(l), pixels = DicomIO.pixels(l);
                 Map<String,String> uidExpected = new HashMap<>();
                 for (DicomIO.Row row : DicomIO.rows(l)) if (row.attribute().getTag().getGroup()!=2 && row.vr().equals("UI") && UniqueIdentifierAttribute.isTransient(row.attribute().getTag()) && !row.value().isBlank()) {

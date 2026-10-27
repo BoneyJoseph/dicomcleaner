@@ -121,6 +121,21 @@ public final class EngineTest {
             Map<String,ScanLabels.Labels> unsafeLabel=Map.of("2.25.1000032345678902",new ScanLabels.Labels("T1 TESTMRN778899","",""));
             expect(java.io.IOException.class,()->Cleaner.prepare(scan.instances(),OPTIONS,"",new IdentifierPolicy(),unsafeLabel,PROGRESS,()->false),"residual check rejects identifier in reviewed label");
             // Changes after import must invalidate the snapshot.
+            Path compressed=root.resolve("compressed/jpeg.dcm");AttributeList jpeg=image(7,false);
+            value(jpeg,0x00080016,SOPClass.SecondaryCaptureImageStorage);number(jpeg,0x00280100,8);number(jpeg,0x00280101,8);number(jpeg,0x00280102,7);
+            java.awt.image.BufferedImage gray=new java.awt.image.BufferedImage(32,32,java.awt.image.BufferedImage.TYPE_BYTE_GRAY);
+            for(int y=0;y<32;y++)for(int x=0;x<32;x++)gray.getRaster().setSample(x,y,0,(x+y)*4);
+            java.io.ByteArrayOutputStream encoded=new java.io.ByteArrayOutputStream();javax.imageio.ImageIO.write(gray,"jpeg",encoded);byte[] frame=encoded.toByteArray();
+            PixelSafety.inspectJpeg(frame);
+            jpeg.put(new OtherByteAttributeMultipleCompressedFrames(TagFromName.PixelData,new byte[][]{frame}));Files.createDirectories(compressed.getParent());DicomIO.write(jpeg,compressed,TransferSyntax.JPEGBaseline);
+            Cleaner.Scan compressedScan=Cleaner.scan(List.of(compressed),PROGRESS,()->false);
+            try(Cleaner.Batch b=Cleaner.prepare(compressedScan.instances(),OPTIONS,"",PROGRESS,()->false)){
+                DicomIO.Loaded l=DicomIO.read(b.outputs.get(0).file);check(l.syntax().equals(TransferSyntax.JPEGBaseline),"compressed transfer syntax preserved");
+                com.pixelmed.display.SourceImage img=new com.pixelmed.display.SourceImage(l.list());try{check(img.getBufferedImage(0)!=null,"bundled JPEG decoder");}finally{try{img.close();}catch(Throwable e){throw new Exception(e);}}
+            }
+            byte[] text="patient TESTMRN778899".getBytes(StandardCharsets.US_ASCII);java.io.ByteArrayOutputStream injected=new java.io.ByteArrayOutputStream();injected.write(frame,0,2);injected.write(255);injected.write(254);injected.write((text.length+2)>>8);injected.write((text.length+2)&255);injected.write(text);injected.write(frame,2,frame.length-2);
+            expect(java.io.IOException.class,()->PixelSafety.inspectJpeg(injected.toByteArray()),"reject PHI in a JPEG comment inside PixelData");
+            expect(java.io.IOException.class,()->PixelSafety.inspectJpeg(new byte[]{(byte)255,79,0,0}),"uninspected compressed format blocked");
             write(image(99,false),ct);expect(java.io.IOException.class,()->Cleaner.prepare(scan.instances(),OPTIONS,"",PROGRESS,()->false),"reject modified source");
             Path settingsDir=root.resolve("settings");System.setProperty("bnel.settingsDir",settingsDir.toString());AppSettings a=new AppSettings();a.set("dicomdir",true);a.set("width",1440);a.save();AppSettings b=new AppSettings();check(b.bool("dicomdir",false)&&b.integer("width",0)==1440,"settings remembered");check(!Files.readString(b.path).contains("TESTMRN"),"no identifiers in settings");
             System.out.println("PASS: "+assertions+" assertions (synthetic CT/MR/REG, mixed text, references, redaction, folder/ZIP/DICOMDIR, cancellation, settings)");
