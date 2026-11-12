@@ -1,0 +1,18 @@
+JPEGLosslessImageReaderSpi.canDecodeInput() = false
+JPEGLosslessImageReaderSpi.canDecodeInput() = false
+JPEGLosslessImageReaderSpi.canDecodeInput() = false
+Click leaf 0 at java.awt.Point[x=1082,y=767]
+after click index=0 lead=0 target=0 viewport=java.awt.Rectangle[x=0,y=0,width=725,height=1473] row=java.awt.Rectangle[x=162,y=212,width=366,height=52]
+Click leaf 44 at java.awt.Point[x=1082,y=1976]
+after click index=44 lead=44 target=44 viewport=java.awt.Rectangle[x=0,y=1131,width=725,height=1473] row=java.awt.Rectangle[x=162,y=2552,width=366,height=52]
+Click leaf 89 at java.awt.Point[x=1082,y=1976]
+after click index=89 lead=89 target=89 viewport=java.awt.Rectangle[x=0,y=3523,width=725,height=1473] row=java.awt.Rectangle[x=162,y=4944,width=366,height=52]
+Click leaf 30 at java.awt.Point[x=1082,y=555]
+after click index=30 lead=30 target=30 viewport=java.awt.Rectangle[x=0,y=1824,width=725,height=1473] row=java.awt.Rectangle[x=162,y=1824,width=366,height=52]
+Click leaf 44 at java.awt.Point[x=1106,y=767]
+after click index=44 lead=44 target=44 viewport=java.awt.Rectangle[x=0,y=0,width=749,height=1473] row=java.awt.Rectangle[x=162,y=212,width=366,height=52]
+Click leaf 5 at java.awt.Point[x=1082,y=1027]
+after click index=5 lead=5 target=5 viewport=java.awt.Rectangle[x=0,y=0,width=725,height=1473] row=java.awt.Rectangle[x=162,y=472,width=366,height=52]
+JPEGLosslessImageReaderSpi.canDecodeInput() = false
+3597-node fixture setup: 80 ms; pixel decoding asynchronous.
+PASS: 57 refresh assertions; scale=2

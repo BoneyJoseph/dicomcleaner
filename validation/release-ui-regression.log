@@ -1,0 +1,18 @@
+JPEGLosslessImageReaderSpi.canDecodeInput() = false
+JPEGLosslessImageReaderSpi.canDecodeInput() = false
+Nov 04, 2026 3:50:37 AM org.apache.pdfbox.pdmodel.font.PDType1Font <init>
+WARNING: Using fallback font LiberationSans for base font Helvetica
+Nov 04, 2026 3:50:37 AM org.apache.pdfbox.pdmodel.font.PDType1Font <init>
+WARNING: Using fallback font LiberationSans for base font Helvetica
+JPEGLosslessImageReaderSpi.canDecodeInput() = false
+Nov 04, 2026 3:50:38 AM org.apache.pdfbox.pdmodel.font.PDType1Font <init>
+WARNING: Using fallback font LiberationSans for Helvetica
+Nov 04, 2026 3:50:38 AM org.apache.pdfbox.pdmodel.font.PDType1Font <init>
+WARNING: Using fallback font LiberationSans for Helvetica
+JPEGLosslessImageReaderSpi.canDecodeInput() = false
+Cine: at least 15 slices in 1214 ms, including test polling/pause
+JPEGLosslessImageReaderSpi.canDecodeInput() = false
+JPEGLosslessImageReaderSpi.canDecodeInput() = false
+JPEGLosslessImageReaderSpi.canDecodeInput() = false
+GUI assertions: 68
+PASS: headful import, union, clean/review actions, optional review, resize, landscape layout, native viewer frame, report pages, mouse wheel, file exclusion, stack scrubbing, cine, custom rules and screenshots

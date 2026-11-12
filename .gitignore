@@ -1,0 +1,20 @@
+# Build output (license notices are kept: the offline build and package need them)
+standalone/build/*
+!standalone/build/notices/
+
+# Only the six pinned, checksum-locked dependency jars belong in vendor/
+standalone/vendor/*
+!standalone/vendor/pixelmed.jar
+!standalone/vendor/pixelmed_imageio.jar
+!standalone/vendor/pixelmed_codec.jar
+!standalone/vendor/vecmath1.2-1.14.jar
+!standalone/vendor/pdfbox-app-3.0.8.jar
+!standalone/vendor/flatlaf-3.7.jar
+
+# Local settings and caches — never commit preferences or imaging data
+*.properties
+__pycache__/
+.DS_Store
+__MACOSX/
+*.dcm
+DICOMDIR

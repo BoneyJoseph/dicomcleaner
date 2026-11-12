@@ -1,0 +1,21 @@
+{
+  "changed_files": [
+    "BNEL Dicom Cleaner 1.1.0/BNEL Dicom Cleaner.exe",
+    "BNEL Dicom Cleaner 1.1.0/app/BNEL-Dicom-Cleaner.jar"
+  ],
+  "icon_sizes": [
+    16,
+    24,
+    32,
+    48,
+    64,
+    128,
+    256
+  ],
+  "configuration_unchanged": true,
+  "all_other_package_files_unchanged": true,
+  "launcher_code_and_other_sections_unchanged": true,
+  "bytes": 66403374,
+  "sha256": "cc32442528442c37e6d9d15e523973f1d2df0f7aee70a4f7076138fe319c182e",
+  "windows_launch_test": "Not available in this Linux environment"
+}

@@ -1,0 +1,23 @@
+[main] INFO com.pixelmed.display.ImageEditUtilities Using usePixelDataTemporaryFilesIfPixelDataLengthGreaterThan = 1073741824
+[main] INFO com.pixelmed.display.ImageEditUtilities Using useMultiplePixelDataTemporaryFilesIfPixelDataLengthGreaterThan = -1
+[main] INFO com.pixelmed.display.ImageEditUtilities blackout(): totalSizeInBytes = 2048
+Nov 04, 2026 3:49:42 AM org.apache.pdfbox.pdmodel.font.FileSystemFontProvider loadDiskCache
+INFO: 130 new font files found, font cache will be re-built
+Nov 04, 2026 3:49:42 AM org.apache.pdfbox.pdmodel.font.FileSystemFontProvider <init>
+INFO: Building on-disk font cache, this may take a while
+Nov 04, 2026 3:49:43 AM org.apache.pdfbox.pdmodel.font.FileSystemFontProvider <init>
+INFO: Finished building on-disk font cache, found 130 fonts
+Nov 04, 2026 3:49:43 AM org.apache.pdfbox.pdmodel.font.PDType1Font <init>
+WARNING: Using fallback font LiberationSans for base font Helvetica
+Nov 04, 2026 3:49:43 AM org.apache.pdfbox.pdmodel.font.PDType1Font <init>
+WARNING: Using fallback font LiberationSans for base font Helvetica
+Nov 04, 2026 3:49:43 AM org.apache.pdfbox.pdmodel.font.PDType1Font <init>
+WARNING: Using fallback font LiberationSans for base font Helvetica
+Nov 04, 2026 3:49:43 AM org.apache.pdfbox.pdmodel.font.PDType1Font <init>
+WARNING: Using fallback font LiberationSans for base font Helvetica
+Nov 04, 2026 3:49:43 AM org.apache.pdfbox.pdmodel.font.PDType1Font <init>
+WARNING: Using fallback font LiberationSans for Helvetica
+Nov 04, 2026 3:49:43 AM org.apache.pdfbox.pdmodel.font.PDType1Font <init>
+WARNING: Using fallback font LiberationSans for Helvetica
+PASS: 430 assertions (synthetic CT/MR/REG, mixed text, references, redaction, folder/ZIP/DICOMDIR, cancellation, settings)
+Built /workspace/scratch/8e41400d1b68/dicomcleaner/standalone/build/app/BNEL-Dicom-Cleaner.jar

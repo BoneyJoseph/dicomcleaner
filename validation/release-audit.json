@@ -1,0 +1,22 @@
+{
+  "version": "1.1.0",
+  "bytes": 66037692,
+  "sha256": "c9ef902ca3a7f58ee25fc596557d5713e0bc08a4aa0dd592c897123709fe92b5",
+  "files": 337,
+  "runtime_unchanged": true,
+  "java_rmi_included": true,
+  "gui_subsystem": true,
+  "launcher_code_unchanged": true,
+  "embedded_icon_sizes": [
+    16,
+    24,
+    32,
+    48,
+    64,
+    128,
+    256
+  ],
+  "icon_source_sha256": "bb74c8302f09d9c2c8382b41d004105db6362e1c2303d1a6f4d215f3cc502d3e",
+  "lean_contents": true,
+  "windows_execution": "Not available in this environment"
+}
