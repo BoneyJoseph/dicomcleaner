@@ -37,6 +37,21 @@ final class GuardTest {
         EngineTest.check(kinds(f, "ImageComments").contains("contains an ID or institution text from the source files"), "guard: institution word");
         EngineTest.check(kinds(f, "ImageType").isEmpty(), "guard: MARY inside PRIMARY is not a hit");
 
+        // 1b. Names written together or embedded in other text.
+        AttributeList people = list(new int[]{0x00100010, 0x00080090}, "Mackery^Linda Jane", "Stevens Jr^Jorge");
+        String[] hits = {"janelinda", "x_janemackery_y", "zzMACKERYzz", "LindaJane2", "notes jorge", "STEVENS-JR", "mackery-linda"};
+        for (String h : hits) {
+            ResidualGuard n = new ResidualGuard(); n.generated(Set.of()); n.collect(people);
+            n.capture("MR · names", list(new int[]{0x0008103e}, h));
+            EngineTest.check(kinds(n.findings(), "SeriesDescription").contains("contains a name from the source files"), "guard: name found in '" + h + "'");
+        }
+        String[] quietValues = {"ORIGINAL\\PRIMARY", "AX T2 FLAIR", "t1_mprage_sag_p2_iso", "ep2d_diff_mddw_20 TRACEW", "Janet scan"};
+        for (String q : quietValues) {
+            ResidualGuard n = new ResidualGuard(); n.generated(Set.of()); n.collect(people);
+            n.capture("MR · names", list(new int[]{0x0008103e}, q));
+            EngineTest.check(n.findings().isEmpty(), "guard: no name alarm for '" + q + "': " + n.findings());
+        }
+
         // 2. Known false alarms are avoided: app-generated UIDs, standard UIDs, stop words, replacement date.
         ResidualGuard quiet = new ResidualGuard();
         Set<String> live = new HashSet<>();

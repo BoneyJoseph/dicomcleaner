@@ -17,7 +17,8 @@ import java.util.regex.Pattern;
  * output (and printable text inside kept private payloads) for them. Findings are warnings only.
  *
  * Matching rules
- * - Person names: whole words only (so MARY does not match inside PRIMARY).
+ * - Person names: 3-4 letter parts as whole words (MARY does not match inside PRIMARY); 5+ letter parts
+ *   anywhere; any two name parts written together in either order (JANELINDA, JANEMACKERY).
  * - Numeric identifiers (IDs, accession, phone, serial numbers; 4+ digits): every non-digit is
  *   stripped from both sides, then the identifier is searched inside the remaining digit stream, so
  *   705-693-123 is found inside "xh$jknl7056931236780nmjko".
@@ -170,13 +171,34 @@ final class ResidualGuard {
     private Set<String> kinds(String text, Set<String> dateTokens) {
         Set<String> kinds = new LinkedHashSet<>();
         Set<String> w = words(text);
-        for (String name : nameWords) if (w.contains(name)) { kinds.add("contains a name from the source files"); break; }
+        if (containsName(text, w)) kinds.add("contains a name from the source files");
         String alnum = normalize(text), digitStream = digits(text);
         for (String p : phrases) if (alnum.contains(p)) { kinds.add("contains an ID or institution text from the source files"); break; }
         for (String d : digitIds) if (digitStream.contains(d)) { kinds.add("contains a number from a source identifier"); break; }
         for (String d : dateTokens) if (digitStream.contains(d)) { kinds.add("contains a source date"); break; }
         if (SUSPICIOUS.matcher(text).find()) kinds.add("looks like an email, web address, file path or labelled ID");
         return kinds;
+    }
+
+    /**
+     * Name matching. Short parts (3-4 letters, e.g. MARY, JANE, LEE) only as whole words, so MARY does not
+     * match inside PRIMARY. Parts of 5+ letters (e.g. JORGE, STEVENS, MACKERY) anywhere in the letters, so
+     * "xxMACKERYyy" is found. Any two name parts written together, in either order, anywhere in the letters
+     * (JANELINDA, LINDAJANE, JANEMACKERY, MACKERYLINDA), including across punctuation ("jane_mackery").
+     */
+    private boolean containsName(String text, Set<String> words) {
+        if (nameWords.isEmpty()) return false;
+        String letters = Normalizer.normalize(text, Normalizer.Form.NFKD).replaceAll("\\p{M}", "")
+            .toUpperCase(Locale.ROOT).replaceAll("[^A-Z]", "");
+        for (String name : nameWords) {
+            if (words.contains(name)) return true;
+            if (name.length() >= 5 && letters.contains(name)) return true;
+        }
+        for (String a : nameWords) {
+            if (!letters.contains(a)) continue;
+            for (String b : nameWords) if (!a.equals(b) && letters.contains(a + b)) return true;
+        }
+        return false;
     }
 
     /** True when the chosen replacement name/ID itself contains an original identifier. */
