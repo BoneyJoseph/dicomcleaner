@@ -212,7 +212,8 @@ public final class EngineTest {
             expect(java.io.IOException.class,()->PixelSafety.inspectJpeg(new byte[]{(byte)255,79,0,0}),"uninspected compressed format blocked");
             write(image(99,false),ct);try(Cleaner.Batch changedBatch=Cleaner.prepare(scan.instances(),OPTIONS,"",PROGRESS,()->false)){check(changedBatch.outputs.size()==1&&changedBatch.skipped.size()==2,"changed source and dependent registration skipped; valid MRI retained");}
             Path settingsDir=root.resolve("settings");System.setProperty("bnel.settingsDir",settingsDir.toString());AppSettings a=new AppSettings();a.set("dicomdir",true);a.set("width",1440);tagRules.save(a);a.save();AppSettings b=new AppSettings();check(b.bool("dicomdir",false)&&b.integer("width",0)==1440,"settings remembered");check(!Files.readString(b.path).contains("TESTMRN"),"no identifiers in settings");check(IdentifierPolicy.load(b).removedTags.equals(tagRules.removedTags),"custom tag rules remembered");
-            System.out.println("PASS: "+assertions+" assertions (synthetic CT/MR/REG, mixed text, references, redaction, folder/ZIP/DICOMDIR, cancellation, settings, identifier check)");
+            SiemensTagTest.run(root);
+            System.out.println("PASS: "+assertions+" assertions (synthetic CT/MR/REG, mixed text, references, redaction, folder/ZIP/DICOMDIR, cancellation, settings, identifier check, Siemens DWI/fMRI tags)");
         }finally{DicomIO.deleteTree(root);}
     }
 }

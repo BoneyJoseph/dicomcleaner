@@ -210,6 +210,7 @@ public final class Cleaner {
             throw new IOException("Replacement identity verification failed.");
         for (DicomIO.Row row : DicomIO.rows(l)) {
             AttributeTag t = row.attribute().getTag(); int group = t.getGroup();
+            if (options.keepSiemensDiffusion() && !row.path().contains("/") && Policy.siemensDiffusionTag(l,t)) continue;
             if (t.isPrivate() || group == 0x0400 || group == 0xfffa || (group & 0xff00) == 0x6000 || row.vr().equals("UN"))
                 throw new IOException("A disallowed metadata element survived cleaning.");
             if (expectedUids.containsKey(row.path()) && !expectedUids.get(row.path()).equals(row.value()))

@@ -12,9 +12,10 @@ import java.util.*;
 public final class Policy {
     public static final String VERSION = "0.3.0";
     public enum DateMode { FIXED, RANDOM }
-    public record Options(String patientName, String patientId, DateMode dateMode, LocalDate targetDate, boolean minimal, Map<java.nio.file.Path,LocalDate> folderDates) {
+    public record Options(String patientName, String patientId, DateMode dateMode, LocalDate targetDate, boolean minimal, Map<java.nio.file.Path,LocalDate> folderDates, boolean keepSiemensDiffusion) {
         public Options(String name,String id,DateMode mode,LocalDate date){this(name,id,mode,date,false,Map.of());}
         public Options(String name,String id,DateMode mode,LocalDate date,boolean minimal){this(name,id,mode,date,minimal,Map.of());}
+        public Options(String name,String id,DateMode mode,LocalDate date,boolean minimal,Map<java.nio.file.Path,LocalDate> folderDates){this(name,id,mode,date,minimal,folderDates,false);}
         public Options {
             folderDates = Map.copyOf(folderDates);
             patientName = patientName == null ? "" : patientName.strip();
@@ -27,6 +28,40 @@ public final class Policy {
             if (targetDate.getYear() < 1 || targetDate.getYear() > 9999)
                 throw new IllegalArgumentException("Choose a date between years 0001 and 9999.");
         }
+    }
+    /*
+     * Optional, vetted Siemens private tags needed to analyse classic (non-enhanced) diffusion and fMRI
+     * series: b-value, gradient direction, B-matrix, mosaic layout, slice timing and the CSA image header.
+     * Kept only when the operator enables "Keep Siemens diffusion/fMRI tags", only under the matching
+     * private creator, and only these element offsets. The CSA series header (0029,xx20), which carries
+     * the full protocol text, is never kept. Printable text in kept payloads is scanned by ResidualGuard.
+     */
+    private static final Set<Integer> SIEMENS_MR_HEADER = Set.of(
+        0x0A, // NumberOfImagesInMosaic
+        0x0B, // SliceMeasurementDuration
+        0x0C, // B_value
+        0x0D, // DiffusionDirectionality
+        0x0E, // DiffusionGradientDirection
+        0x15, // SlicePosition_PCS
+        0x18, // RealDwellTime
+        0x27, // B_matrix
+        0x28, // BandwidthPerPixelPhaseEncode
+        0x29  // MosaicRefAcqTimes (slice timing)
+    );
+    private static final Set<Integer> SIEMENS_CSA_HEADER = Set.of(0x10); // CSA Image Header Info
+    static boolean siemensDiffusionTag(AttributeList list, AttributeTag t) {
+        if (!t.isPrivate()) return false;
+        int g = t.getGroup(), e = t.getElement();
+        if (g != 0x0019 && g != 0x0029) return false;
+        if (e >= 0x0010 && e <= 0x00ff) { // private creator element
+            String creator = value(list, key(t)).strip();
+            return (g == 0x0019 && creator.equals("SIEMENS MR HEADER")) || (g == 0x0029 && creator.equals("SIEMENS CSA HEADER"));
+        }
+        if (e < 0x1000) return false;
+        String creator = value(list, (g << 16) | (e >>> 8)).strip();
+        int offset = e & 0xff;
+        return (g == 0x0019 && creator.equals("SIEMENS MR HEADER") && SIEMENS_MR_HEADER.contains(offset))
+            || (g == 0x0029 && creator.equals("SIEMENS CSA HEADER") && SIEMENS_CSA_HEADER.contains(offset));
     }
     private static final DateTimeFormatter DA = DateTimeFormatter.ofPattern("uuuuMMdd").withResolverStyle(ResolverStyle.STRICT);
     private static final Map<Integer, String> RULES = loadRules();
@@ -158,6 +193,7 @@ public final class Policy {
             String vr = new String(a.getVR(), StandardCharsets.US_ASCII);
             String action = RULES.getOrDefault(k, "");
             if(identifierPolicy.removes(k)){list.remove(t);count("removed_custom_tag");continue;}
+            if(options.keepSiemensDiffusion()&&siemensDiffusionTag(list,t)){count("kept_siemens_diffusion_fmri_tag");continue;}
             if(minimalForInstance&&!ESSENTIAL.contains(k)) {list.remove(t);count("removed_nonessential_metadata");continue;}
             if (t.isPrivate() || group == 0 || group == 2 || group == 4 || (group == 0x0012 && IdentifierPolicy.category(list,a)!=IdentifierPolicy.Category.TRIAL) ||
                     (group & 0xff00) == 0x5000 || (group & 0xff00) == 0x6000 ||

@@ -15,7 +15,7 @@ final class SettingsStrip extends JPanel {
     boolean compact;int wideMinimum;
     SettingsStrip(Main app){
         super(new BorderLayout());this.app=app;setOpaque(false);setName("Cleaning and export settings");grid.setOpaque(false);
-        metadataWide=Theme.line(Theme.label("Metadata",13,true),app.minimal,app.identifiers,app.scanLabels,app.differences);
+        metadataWide=Theme.line(Theme.label("Metadata",13,true),app.minimal,app.siemens,app.identifiers,app.scanLabels,app.differences);
         exportWide=Theme.line(Theme.label("Export",13,true),app.hierarchy,app.originalNames,app.zip,app.dicomdir);
         replace=Theme.line(Theme.label("Replace",13,true),nameLabel,app.patientName,app.linkedIdentity,idLabel,app.patientId);
         date=Theme.line(new JLabel("Synthetic date"),app.dateMode,app.date);
@@ -28,19 +28,31 @@ final class SettingsStrip extends JPanel {
         wideMinimum=Math.max(metadataWide.getPreferredSize().width,replace.getPreferredSize().width)+Math.max(exportWide.getPreferredSize().width,date.getPreferredSize().width)+Theme.u(60);
         add(Theme.card(null,grid));arrange(false);
 
-        for(JCheckBox b:new JCheckBox[]{app.minimal,app.hierarchy,app.originalNames,app.zip,app.dicomdir})b.addActionListener(e->summary());
+        for(JCheckBox b:new JCheckBox[]{app.minimal,app.siemens,app.hierarchy,app.originalNames,app.zip,app.dicomdir})b.addActionListener(e->summary());
         summary();
     }
     JButton metadataButton(){return metadataButton;} JButton exportButton(){return exportButton;}
     static void fixed(JComponent c,int width){Dimension d=new Dimension(Theme.u(width),Theme.u(32));c.setPreferredSize(d);c.setMinimumSize(d);c.setMaximumSize(d);}
-    void summary(){metaSummary.setText(app.minimal.isSelected()?"Essential metadata on":"Essential metadata off");int n=0;for(JCheckBox b:new JCheckBox[]{app.hierarchy,app.originalNames,app.zip,app.dicomdir})if(b.isSelected())n++;exportSummary.setText(n+" options on");}
+    /** Compact-mode summaries name the options that are on, e.g. "Export: hierarchy, ZIP". */
+    void summary(){
+        java.util.List<String> meta=new java.util.ArrayList<>(),export=new java.util.ArrayList<>();
+        if(app.minimal.isSelected())meta.add("essential metadata");
+        if(app.siemens.isSelected())meta.add("Siemens DWI/fMRI tags");
+        if(app.hierarchy.isSelected())export.add("hierarchy");
+        if(app.originalNames.isSelected())export.add("original names");
+        if(app.zip.isSelected())export.add("ZIP");
+        if(app.dicomdir.isSelected())export.add("DICOMDIR");
+        metaSummary.setText(meta.isEmpty()?"Default cleaner":String.join(", ",meta));
+        exportSummary.setText(export.isEmpty()?"Plain folder":String.join(", ",export));
+        metaSummary.setToolTipText(metaSummary.getText());exportSummary.setToolTipText(exportSummary.getText());
+    }
     void show(JPopupMenu menu,JButton anchor){summary();menu.show(anchor,0,-menu.getPreferredSize().height-Theme.u(8));}
     void arrange(boolean value){
         compact=value;metadataPopup.setVisible(false);exportPopup.setVisible(false);grid.removeAll();metadataPopup.removeAll();exportPopup.removeAll();
         if(value){
-            popup(metadataPopup,app.minimal,app.identifiers,app.scanLabels,app.differences);popup(exportPopup,app.hierarchy,app.originalNames,app.zip,app.dicomdir);
+            popup(metadataPopup,app.minimal,app.siemens,app.identifiers,app.scanLabels,app.differences);popup(exportPopup,app.hierarchy,app.originalNames,app.zip,app.dicomdir);
         }else{
-            metadataWide.removeAll();append(metadataWide,Theme.label("Metadata",13,true),app.minimal,app.identifiers,app.scanLabels,app.differences);
+            metadataWide.removeAll();append(metadataWide,Theme.label("Metadata",13,true),app.minimal,app.siemens,app.identifiers,app.scanLabels,app.differences);
             exportWide.removeAll();append(exportWide,Theme.label("Export",13,true),app.hierarchy,app.originalNames,app.zip,app.dicomdir);
         }
         nameLabel.setText(value?"Name":"Patient Name");idLabel.setText(value?"ID":"Patient ID");
