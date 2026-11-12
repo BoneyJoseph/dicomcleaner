@@ -31,7 +31,8 @@ public final class Main extends JFrame {
     final JLabel originalName=new JLabel("Select any individual DICOM instance"), cleanedName=new JLabel("Clean a selection to compare"),
         status=new JLabel(" "), counts=new JLabel("No files imported"), percent=new JLabel(" ");
     final JTextField patientName=new JTextField("",14),patientId=new JTextField("",14),date=new JTextField("2000-01-01",10);
-    final JCheckBox minimal=new JCheckBox("Essential research metadata");
+    final JCheckBox minimal=new JCheckBox("Essential metadata");
+    final JCheckBox siemens=new JCheckBox("Keep DWI/fMRI tags");
     final JCheckBox hierarchy=new JCheckBox("Preserve imported hierarchy",true),originalNames=new JCheckBox("Retain original folder/file names"),
         zip=new JCheckBox("ZIP export"),dicomdir=new JCheckBox("Include DICOMDIR");
     final JComboBox<String> dateMode=new JComboBox<>(new String[]{"Fixed date","Random per folder"});
@@ -67,6 +68,7 @@ public final class Main extends JFrame {
         metadataSplit=new RatioSplit(JSplitPane.HORIZONTAL_SPLIT,Theme.card("Original",op),Theme.card("Cleaned",cp),.5);metadataSplit.setResizeWeight(.5);metadataSplit.setBorder(null);metadataSplit.setContinuousLayout(true);
         metadataSplit.getLeftComponent().setMinimumSize(new Dimension(Theme.u(240),160));metadataSplit.getRightComponent().setMinimumSize(new Dimension(Theme.u(240),160));
         metadataSplit.restore(settings,"layout.instance.ratio");
+        allOriginal.peer=allCleaned;allCleaned.peer=allOriginal;
         ((RatioSplit)allMetadata.split).restore(settings,"layout.aggregate.ratio");
         ((RatioSplit)allOriginal.split).restore(settings,"layout.detail.ratio");((RatioSplit)allCleaned.split).restore(settings,"layout.detail.ratio");
         metadataTabs.addTab("All metadata",allMetadata);metadataTabs.addTab("Instance comparison",metadataSplit);
@@ -89,6 +91,9 @@ public final class Main extends JFrame {
         dateMode.setSelectedIndex(settings.integer("dateMode",0)==1?1:0);date.setText(settings.text("date","2000-01-01"));
         minimal.setOpaque(false);minimal.setSelected(settings.bool("minimal",true));minimal.setToolTipText("<html><b>Additional removal beyond the default cleaner</b><br>Uses an allowlist for classic CT/MR and registration objects.<br>Also drops optional tags outside that list, including extra acquisition,<br>workflow, presentation and descriptive metadata—even if not identifying.<br>Examples: Acquisition Duration (0018,9073), Exposure in µAs<br>(0018,1153), and Detector Temperature (0018,7001).<br>Keeps pixels, dimensions, geometry, registration matrices, scan options,<br>MR acquisition type, key timing parameters and your chosen scan labels.<br>Enhanced/secondary-capture images use the broader cleaner to preserve<br>their required structures. This does not inspect or change image pixels.</html>");
         minimal.addActionListener(e->{invalidateBatch();persist(false);});
+        siemens.setOpaque(false);siemens.setSelected(settings.bool("siemensDiffusion",false));
+        siemens.setToolTipText("<html><b>Keep a short, vetted list of Siemens private tags (classic Siemens DWI/fMRI)</b><br>Needed to analyse classic Siemens DWI and fMRI (e.g. with dcm2niix):<br>b-value, gradient direction, B-matrix, mosaic layout, slice timing<br>and the CSA image header. All other private tags are still removed.<br>The CSA series header (full protocol text) is never kept. Text inside<br>kept tags is scanned by the identifier check. Off by default.</html>");
+        siemens.addActionListener(e->{invalidateBatch();persist(false);});
         hierarchy.setToolTipText("Preserve the imported folder nesting in the export.");
         originalNames.setToolTipText(ActionHelp.tip("Keep the original folder and file names; leave off to use neutral names while preserving nesting."));
         zip.setToolTipText("Export the cleaned folder tree as a ZIP archive.");
@@ -146,7 +151,7 @@ public final class Main extends JFrame {
         remove.setEnabled(idle&&!selection.isEmpty());clean.setEnabled(idle&&!selection.isEmpty());
         review.setEnabled(idle&&(batch!=null||current!=null));export.setEnabled(idle&&batch!=null&&batch.exportReady());cancel.setEnabled(!idle);if(cancel.isVisible()==idle){cancel.setVisible(!idle);Theme.reflow((JComponent)getContentPane());}
         differences.setEnabled(idle&&instances.size()>1);
-        for(JComponent c:new JComponent[]{patientName,patientId,linkedIdentity,dateMode,hierarchy,zip,dicomdir,minimal})c.setEnabled(idle);
+        for(JComponent c:new JComponent[]{patientName,patientId,linkedIdentity,dateMode,hierarchy,zip,dicomdir,minimal,siemens})c.setEnabled(idle);
         date.setEnabled(idle&&dateMode.getSelectedIndex()==0);originalNames.setEnabled(idle&&hierarchy.isSelected());
     }
     void chooseImport(boolean folder){
@@ -191,11 +196,11 @@ public final class Main extends JFrame {
     void clearSession(){invalidateBatch();instances.clear();labels.clear();folderDates.clear();selection=List.of();patientName.setText("");patientId.setText("");rebuildTree();refreshUnion(false);progress.setValue(0);percent.setText(" ");status.setText(" ");}
     void cleanSelection(){
         try{
-            Policy.Options options=new Policy.Options(patientName.getText(),patientId.getText(),dateMode.getSelectedIndex()==0?Policy.DateMode.FIXED:Policy.DateMode.RANDOM,LocalDate.parse(date.getText().strip()),minimal.isSelected(),folderDates);
+            Policy.Options options=new Policy.Options(patientName.getText(),patientId.getText(),dateMode.getSelectedIndex()==0?Policy.DateMode.FIXED:Policy.DateMode.RANDOM,LocalDate.parse(date.getText().strip()),minimal.isSelected(),folderDates,siemens.isSelected());
             List<Cleaner.Instance> chosen=List.copyOf(selection),imported=List.copyOf(instances);invalidateBatch();
             IdentifierPolicy selectedPolicy=identifierPolicy;Map<String,ScanLabels.Labels> selectedLabels=Map.copyOf(labels);
-            runTask("Cleaning metadata",()->Cleaner.prepare(chosen,options,"",selectedPolicy,selectedLabels,imported,this::progress,cancellation::get),result->{batch=result;if(current!=null)display(current);refreshUnion(true);metadataTabs.setSelectedIndex(0);status.setText(batch.outputs.size()+" files cleaned · "+batch.skipped.size()+" skipped · "+(batch.outputs.isEmpty()?"No files to export":"Ready to export"));
-                if(!batch.skipped.isEmpty()||!batch.warnings.isEmpty()||!batch.referenceDetails.isEmpty())showText("Cleaning results",cleaningResults(batch));});
+            runTask("Cleaning metadata",()->Cleaner.prepare(chosen,options,"",selectedPolicy,selectedLabels,imported,this::progress,cancellation::get),result->{batch=result;if(current!=null)display(current);refreshUnion(true);metadataTabs.setSelectedIndex(0);status.setText(batch.outputs.size()+" files cleaned · "+batch.skipped.size()+" skipped · "+(batch.identifierFindings.isEmpty()?"":batch.identifierFindings.size()+" identifier warning(s) · ")+(batch.outputs.isEmpty()?"No files to export":"Ready to export"));
+                if(!batch.identifierFindings.isEmpty()||!batch.skipped.isEmpty()||!batch.warnings.isEmpty()||!batch.referenceDetails.isEmpty()){Cleaner.Batch shown=batch;SwingUtilities.invokeLater(()->showText("Cleaning results",cleaningResults(shown)));}});
 
         }catch(Exception e){Theme.error(this,e);}
     }
@@ -230,7 +235,7 @@ public final class Main extends JFrame {
     void persist(boolean reportErrors){
         settings.set("width",getWidth());settings.set("height",getHeight());outerSplit.remember(settings,"layout.source.ratio");metadataSplit.remember(settings,"layout.instance.ratio");((RatioSplit)allMetadata.split).remember(settings,"layout.aggregate.ratio");((RatioSplit)allOriginal.split).remember(settings,"layout.detail.ratio");
         settings.set("hierarchy",hierarchy.isSelected());settings.set("originalNames",originalNames.isSelected());settings.set("zip",zip.isSelected());settings.set("dicomdir",dicomdir.isSelected());settings.values.remove("profile");settings.set("dateMode",dateMode.getSelectedIndex());settings.set("date",date.getText());
-        settings.set("minimal",minimal.isSelected());identifierPolicy.save(settings);
+        settings.set("minimal",minimal.isSelected());settings.set("siemensDiffusion",siemens.isSelected());identifierPolicy.save(settings);
         try{settings.save();}catch(IOException e){if(reportErrors)Theme.error(this,new IOException("Preferences could not be saved. Extract the app to a writable folder."));}
     }
     void closeWindow(){
@@ -240,6 +245,12 @@ public final class Main extends JFrame {
     }
     static String cleaningResults(Cleaner.Batch batch){
         StringBuilder text=new StringBuilder(batch.outputs.size()+" files cleaned · "+batch.skipped.size()+" skipped\n");
+        if(!batch.identifierFindings.isEmpty()){
+            text.append("\nPossible identifiers in retained metadata (warning only; export is not blocked).\nEdit the series label (Scan labels) or add a tag-removal rule, then clean again:\n");
+            Map<String,List<ResidualGuard.Finding>> bySeries=new LinkedHashMap<>();
+            for(ResidualGuard.Finding f:batch.identifierFindings)bySeries.computeIfAbsent(f.series(),k->new ArrayList<>()).add(f);
+            bySeries.forEach((series,list)->{text.append("\n  ").append(series).append('\n');for(ResidualGuard.Finding f:list)text.append("    • ").append(f).append('\n');});
+        }
         if(!batch.skipped.isEmpty())text.append("\nSkipped files are not included in export:\n").append(String.join("\n",batch.skipped)).append('\n');
         if(!batch.warnings.isEmpty())text.append("\nProcessing notes:\n").append(String.join("\n",batch.warnings)).append('\n');
         if(!batch.referenceDetails.isEmpty()){

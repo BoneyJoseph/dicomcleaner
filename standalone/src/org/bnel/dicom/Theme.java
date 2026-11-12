@@ -111,7 +111,7 @@ final class Theme {
         Color surface=component.getBackground();p.setBackground(surface);p.getViewport().setBackground(surface);p.setOpaque(true);p.getViewport().setOpaque(true);
         JPanel corner=new JPanel();corner.setBackground(surface);p.setCorner(JScrollPane.LOWER_RIGHT_CORNER,corner);
         if(component instanceof JTable table&&table.getAutoResizeMode()==JTable.AUTO_RESIZE_OFF){
-            int last=table.getClientProperty("bnel.flexColumn") instanceof Integer i?i:table.getColumnCount()-1,min=table.getColumnModel().getColumn(last).getPreferredWidth();
+            int last=table.getClientProperty("bnel.flexColumn") instanceof Integer i?i:table.getColumnCount()-1,min=table.getClientProperty("bnel.flexMin") instanceof Integer m?m:table.getColumnModel().getColumn(last).getPreferredWidth();
             p.getViewport().addComponentListener(new ComponentAdapter(){public void componentResized(ComponentEvent e){
                 int used=0;for(int n=0;n<table.getColumnCount();n++)if(n!=last)used+=table.getColumnModel().getColumn(n).getWidth();
                 int width=Math.max(min,p.getViewport().getWidth()-used);table.getColumnModel().getColumn(last).setPreferredWidth(width);table.getColumnModel().getColumn(last).setWidth(width);
@@ -127,6 +127,36 @@ final class Theme {
     }
     static JPanel footer(Window window,JComponent content){JPanel p=new JPanel(new BorderLayout());p.setOpaque(false);p.add(content);p.setBorder(new EmptyBorder(8,0,4,0));return p;}
     static int u(int value){return com.formdev.flatlaf.util.UIScale.scale(value);}
+    // ---- Viewer image stage (dark surfaces reduce glare around images; the rest of the app stays light) ----
+    static final Color STAGE=new Color(0x1B1D1F), STAGE_PANEL=new Color(0x26292C), STAGE_BORDER=new Color(0x3B3F43),
+        STAGE_TEXT=new Color(0xD9DCD6), STAGE_MUTED=new Color(0x9AA19A);
+    static final String STAGE_BUTTON="background: #2B2E31; foreground: #D9DCD6; borderColor: #43474B; hoverBackground: #34383B; pressedBackground: #3C4043; disabledText: #6B716B; disabledBackground: #222527; disabledBorderColor: #34383B; focusedBorderColor: #8FB39A";
+    /** Restyle a control area for the dark image stage. Primary (sage) buttons keep their colour. */
+    static void darkStage(Component c){
+        if(c instanceof JButton b){if(!BLUE.equals(b.getBackground()))b.putClientProperty("FlatLaf.style",STAGE_BUTTON);}
+        else if(c instanceof JToggleButton t)t.putClientProperty("FlatLaf.style",STAGE_BUTTON+"; selectedBackground: #3E5446; selectedForeground: #FFFFFF");
+        else if(c instanceof JSpinner sp){sp.putClientProperty("FlatLaf.style","background: #2B2E31; buttonBackground: #2B2E31; buttonArrowColor: #D9DCD6; borderColor: #43474B; disabledBackground: #222527; disabledForeground: #6B716B");sp.setForeground(STAGE_TEXT);
+            if(sp.getEditor() instanceof JSpinner.DefaultEditor ed){JTextField f=ed.getTextField();f.putClientProperty("FlatLaf.style","foreground: #D9DCD6; background: #2B2E31; disabledBackground: #222527");f.setCaretColor(STAGE_TEXT);f.setForeground(STAGE_TEXT);f.setBackground(new Color(0x2B2E31));f.setDisabledTextColor(new Color(0x6B716B));}}
+        else if(c instanceof JSlider sl){sl.setOpaque(false);sl.putClientProperty("FlatLaf.style","trackColor: #43474B; trackValueColor: #8FB39A; thumbColor: #8FB39A");}
+        else if(c instanceof JComboBox<?> cb){cb.putClientProperty("FlatLaf.style","background: #2B2E31; foreground: #D9DCD6; buttonBackground: #2B2E31; buttonArrowColor: #D9DCD6; borderColor: #43474B");}
+        else if(c instanceof JLabel l)l.setForeground(STAGE_TEXT);
+        if(c instanceof Container k&&!(c instanceof JSpinner)&&!(c instanceof JComboBox))for(Component child:k.getComponents())darkStage(child);
+    }
+    /** Small borderless icon button (toolbar style) with tooltip and accessible name. */
+    static JButton iconButton(String icon,String tip,Runnable action){
+        JButton b=new JButton(new UiIcons(icon));b.putClientProperty("JButton.buttonType","toolBarButton");b.setToolTipText(tip);b.setName(tip);
+        b.getAccessibleContext().setAccessibleName(tip);b.setFocusable(false);b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));b.addActionListener(e->action.run());return b;
+    }
+    /** Several related buttons drawn as one joined control (shared rounded border, thin dividers). */
+    static JPanel group(JButton... buttons){
+        JPanel p=new JPanel();p.setLayout(new BoxLayout(p,BoxLayout.X_AXIS));p.setOpaque(true);p.setBackground(SURFACE);
+        p.setBorder(new com.formdev.flatlaf.ui.FlatLineBorder(new Insets(1,1,1,1),new Color(0xC9CCC6),1f,u(8)));
+        for(int i=0;i<buttons.length;i++){
+            if(i>0){JSeparator s=new JSeparator(SwingConstants.VERTICAL);s.setForeground(BORDER);s.setMaximumSize(new Dimension(1,u(20)));s.setPreferredSize(new Dimension(1,u(20)));p.add(s);}
+            buttons[i].putClientProperty("JButton.buttonType","toolBarButton");p.add(buttons[i]);
+        }
+        return p;
+    }
     static JPanel line(Component... components){
         JPanel p=new JPanel();p.setOpaque(false);p.setLayout(new BoxLayout(p,BoxLayout.X_AXIS));
         for(int i=0;i<components.length;i++){if(i>0)p.add(Box.createHorizontalStrut(u(8)));p.add(components[i]);}return p;

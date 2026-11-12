@@ -75,6 +75,7 @@ public final class EngineTest {
     }
     static void write(AttributeList l,Path p)throws Exception{Files.createDirectories(p.getParent());DicomIO.write(l,p,TransferSyntax.ExplicitVRLittleEndian);}
     public static void main(String[] args)throws Exception{
+        GuardTest.run();
         Path root=Files.createTempDirectory("bnel-synthetic-tests-");
         try{
             Path input=root.resolve("source/Synthetic Zebra");Path ct=input.resolve("CT/site/file1.dcm"),mr=input.resolve("MR/later-file2.dcm"),reg=input.resolve("REG/reg.dcm");
@@ -83,7 +84,7 @@ public final class EngineTest {
             List<MetadataDifferences.Difference> differences=MetadataDifferences.compute(scan.instances(),PROGRESS,()->false);
             check(differences.stream().anyMatch(d->d.name().equals("StudyComments")&&d.missing()==2),"detect late-merged metadata missing from earlier files");
             try(Cleaner.Batch batch=Cleaner.prepare(scan.instances(),OPTIONS,"",PROGRESS,()->false)){
-                check(batch.outputs.size()==3,"all files cleaned");check(batch.exportReady(),"export available without review");check(batch.unresolvedReferences==0,"registration links resolved");
+                check(batch.outputs.size()==3,"all files cleaned");check(batch.identifierFindings.stream().anyMatch(f->f.location().startsWith("SeriesDescription")&&f.kind().contains("name")),"identifier check flags the retained Series Description: "+batch.identifierFindings);check(batch.exportReady(),"export available without review");check(batch.unresolvedReferences==0,"registration links resolved");
                 Set<String> frameUids=new HashSet<>();String study=null;for(Cleaner.Output o:batch.outputs){
                     AttributeList l=DicomIO.read(o.file).list();check(DicomIO.hash(o.input.source()).equals(o.input.sha256()),"source unchanged");
                     for(DicomIO.Row row:DicomIO.rows(l)){
@@ -211,7 +212,8 @@ public final class EngineTest {
             expect(java.io.IOException.class,()->PixelSafety.inspectJpeg(new byte[]{(byte)255,79,0,0}),"uninspected compressed format blocked");
             write(image(99,false),ct);try(Cleaner.Batch changedBatch=Cleaner.prepare(scan.instances(),OPTIONS,"",PROGRESS,()->false)){check(changedBatch.outputs.size()==1&&changedBatch.skipped.size()==2,"changed source and dependent registration skipped; valid MRI retained");}
             Path settingsDir=root.resolve("settings");System.setProperty("bnel.settingsDir",settingsDir.toString());AppSettings a=new AppSettings();a.set("dicomdir",true);a.set("width",1440);tagRules.save(a);a.save();AppSettings b=new AppSettings();check(b.bool("dicomdir",false)&&b.integer("width",0)==1440,"settings remembered");check(!Files.readString(b.path).contains("TESTMRN"),"no identifiers in settings");check(IdentifierPolicy.load(b).removedTags.equals(tagRules.removedTags),"custom tag rules remembered");
-            System.out.println("PASS: "+assertions+" assertions (synthetic CT/MR/REG, mixed text, references, redaction, folder/ZIP/DICOMDIR, cancellation, settings)");
+            SiemensTagTest.run(root);
+            System.out.println("PASS: "+assertions+" assertions (synthetic CT/MR/REG, mixed text, references, redaction, folder/ZIP/DICOMDIR, cancellation, settings, identifier check, Siemens DWI/fMRI tags)");
         }finally{DicomIO.deleteTree(root);}
     }
 }

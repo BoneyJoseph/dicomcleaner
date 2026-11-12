@@ -1,3 +1,14 @@
+# 1.2.0 — Identifier check, burned-in badge, DWI/fMRI option, viewer refresh
+
+- Identifier check restored as a non-blocking, per-series warning. Numbers and dates are found inside any text; names whole-word (short parts), anywhere (5+ letters) or joined (JANELINDA). App-generated UIDs, standard UIDs, the replacement identity and the synthetic date are skipped, removing the earlier false alarms (MARY in PRIMARY, short IDs inside random UIDs). 2,000 files clean in ~3 s including the check.
+- Sources tree badge for files likely to carry burned-in text (secondary capture, scanner flag, SCREEN SAVE, SECONDARY without position); counts roll up to series and folders.
+- Optional **Keep DWI/fMRI tags**: vetted Siemens private tags (b-value, gradient direction, B-matrix, mosaic, slice timing, CSA image header) under the matching creator only; CSA series header never kept.
+- Main window: single Files column; Value column narrows before scrolling (no horizontal scrollbar at 1280×800); Selected value sized to content with aligned original/cleaned panes; compact settings summaries name the active options; labels shortened to fit the 1600 px reference width (**Essential metadata**, **Keep DWI/fMRI tags**). Cleaning results open after the window settles.
+- Viewer: dark image stage; right-drag window/level; CT window presets; corner overlays without names; icon-only transport, frame rate shown while playing; grouped marking control; Recycle Bin moved to a **More** menu; file rows read "Image 107 · 0007.dcm"; Collapse/Expand as header icons.
+- Sex, age and weight continue to be removed. Series Description retention, optional review and skipping of unprocessable files are unchanged by design.
+
+Validation: 483 engine, 74 GUI and 57 refresh assertions (Linux/Xvfb); Windows build via GitHub Actions.
+
 # 1.1.0 — UI handoff implementation
 
 - Neutral opaque surfaces, sage primary action, regular Segoe UI, scaled text/icons, aligned metadata panes and two-row settings.

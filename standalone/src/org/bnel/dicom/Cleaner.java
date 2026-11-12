@@ -18,8 +18,10 @@ public final class Cleaner {
     public record Instance(Path source, Path importRoot, Path relativePath, String sha256, String sop, String sopClass, String study,
                            String series, String patientKey, String patientName, String patientId,
                            String modality, int seriesNumber, int instanceNumber, int frames, String description,
-                           String problem, LocalDate studyDate) {
+                           String problem, LocalDate studyDate, String burnedInHint) {
         public boolean supported() { return problem.isEmpty(); }
+        /** Non-empty when the file is likely to carry burned-in text (shown as a badge in the sources tree). */
+        public boolean likelyBurnedIn() { return !burnedInHint.isEmpty(); }
         @Override public String toString() { return String.format("%04d", instanceNumber) + "  " + source.getFileName(); }
     }
     public record Scan(List<Instance> instances, int skipped, List<String> issues) {}
@@ -42,6 +44,8 @@ public final class Cleaner {
         public final Policy.Options options;
         public final List<String> skipped=new ArrayList<>();
         public final List<String> warnings=new ArrayList<>();
+        /** Non-blocking identifier-check findings (see ResidualGuard). */
+        public final List<ResidualGuard.Finding> identifierFindings=new ArrayList<>();
         public final Map<String,Integer> operations;
         public int unresolvedReferences;
         public final List<ReferenceDetail> referenceDetails=new ArrayList<>();
@@ -100,7 +104,7 @@ public final class Cleaner {
                     Policy.value(l,0x0020000d),Policy.value(l,0x0020000e),patientKey,name,id,
                     Policy.value(l,0x00080060),Attribute.getSingleIntegerValueOrDefault(l,TagFromName.SeriesNumber,0),Attribute.getSingleIntegerValueOrDefault(l,TagFromName.InstanceNumber,0),
                     Math.max(1,Attribute.getSingleIntegerValueOrDefault(l,TagFromName.NumberOfFrames,1)),
-                    Policy.value(l,0x0008103e),problem,date));
+                    Policy.value(l,0x0008103e),problem,date,burnedInHint(l,sopClass)));
             } catch (Exception e) {
                 if (e instanceof CancellationException) throw e;
                 // Show names locally to let the operator locate failures, never include these in reports.
@@ -122,6 +126,7 @@ public final class Cleaner {
                          Map<String,ScanLabels.Labels> labels,List<Instance> imported,Progress progress,BooleanSupplier cancel)throws Exception {
         if(inputs.isEmpty())throw new IllegalArgumentException("Select folders or images to clean.");
         Policy policy=new Policy(options,null,identifiers);
+        ResidualGuard guard=new ResidualGuard();guard.generated(policy.generatedUids());
         Path stage=Files.createTempDirectory("bnel-cleaner-");
         Batch batch=new Batch(stage,options,"",policy.counts());
         Set<String> seen=new HashSet<>();Map<String,Integer> seriesNumbers=new LinkedHashMap<>();
@@ -141,6 +146,7 @@ public final class Cleaner {
                         originalByCleanUid.put(policy.mapUid(uid),uid);
                     }
                     PixelSafety.inspect(source);
+                    guard.collect(l);
                     Map<String,String> geometry=DicomIO.geometry(l),pixels=DicomIO.pixels(l),uidExpected=new HashMap<>();
                     for(DicomIO.Row row:DicomIO.rows(l))if(row.attribute().getTag().getGroup()!=2&&row.vr().equals("UI")&&UniqueIdentifierAttribute.isTransient(row.attribute().getTag())&&!row.value().isBlank()){
                         List<String> mapped=new ArrayList<>();for(String uid:row.value().split("\\\\"))mapped.add(policy.mapUid(uid));
@@ -162,6 +168,7 @@ public final class Cleaner {
                     if(!source.syntax().equals(verified.syntax()))throw new IOException("Transfer syntax changed unexpectedly");
                     if(!DicomIO.hash(input.source()).equals(input.sha256()))throw new IOException("Source changed during cleaning; import it again");
                     batch.outputs.add(new Output(input,out,DicomIO.hash(out),relative));seen.add(input.sop());
+                    guard.capture(seriesLabel(input),verified.list());guard.skipDate(policy.date());
                     newSops.add(Policy.value(verified.list(),0x00080018));
                     if(!DicomIO.isRegistration(input.sopClass()))imageFrames.add(Policy.value(verified.list(),0x00200052));
                 }catch(CancellationException e){throw e;}
@@ -191,15 +198,37 @@ public final class Cleaner {
                 String state=targets.isEmpty()?"Not loaded — target filename/path is unknown":targets.stream().anyMatch(selected::contains)?"Skipped during cleaning":"Imported but not selected for this export";
                 batch.referenceDetails.add(new ReferenceDetail(uid,entry.getKey(),targets,List.copyOf(new LinkedHashSet<>(entry.getValue())),state));
             }
+            progress.update("Checking retained metadata for identifiers",inputs.size(),inputs.size());
+            batch.identifierFindings.addAll(guard.findings());
+            if(guard.replacementLooksIdentifying(options.patientName())||guard.replacementLooksIdentifying(options.patientId()))
+                batch.identifierFindings.add(0,new ResidualGuard.Finding("Replacement identity","Replacement Patient Name / ID","contains an identifier from the source files",inputs.size()));
             progress.update("Metadata ready",inputs.size(),inputs.size());return batch;
         }catch(Throwable e){try{batch.close();}catch(IOException cleanup){e.addSuppressed(cleanup);}throw e;}
     }
+    /**
+     * Why a file is likely to contain burned-in text, or "" when there is no indication. There is no OCR:
+     * these are metadata cues only. MPR/reformat images (DERIVED\SECONDARY with patient geometry) are not
+     * flagged, to keep the badge meaningful.
+     */
+    static String burnedInHint(AttributeList l,String sopClass){
+        List<String> why=new ArrayList<>();
+        if(Policy.value(l,0x00280301).strip().equalsIgnoreCase("YES"))why.add("scanner flags burned-in annotation");
+        if(isSecondaryCapture(sopClass))why.add("secondary capture (screenshot, report or dose page)");
+        Attribute imageType=l.get(TagFromName.ImageType);
+        String type="\\"+(imageType==null?"":imageType.getDelimitedStringValuesOrEmptyString()).toUpperCase(Locale.ROOT)+"\\";
+        if(type.contains("SCREEN SAVE")||type.contains("SCREENSHOT"))why.add("Image Type says screen save");
+        else if(type.contains("\\SECONDARY\\")&&l.get(TagFromName.ImagePositionPatient)==null&&!isSecondaryCapture(sopClass))why.add("secondary image without patient position");
+        return String.join("; ",why);
+    }
+    static boolean isSecondaryCapture(String sop){return sop.equals("1.2.840.10008.5.1.4.1.1.7")||sop.startsWith("1.2.840.10008.5.1.4.1.1.7.");}
+    static String seriesLabel(Instance i){String d=i.description()==null||i.description().isBlank()?"(no series description)":i.description();return i.modality()+" · "+d+" · series "+i.seriesNumber();}
     private static String reason(Exception e){return e instanceof IllegalArgumentException||e instanceof IOException?String.valueOf(e.getMessage()):"Could not process this instance ("+e.getClass().getSimpleName()+")";}
     private static void validateMetadata(AttributeList l, Policy.Options options, LocalDate date, Map<String,String> expectedUids) throws Exception {
         if (!Policy.value(l,0x00100010).equals(options.patientName()) || !Policy.value(l,0x00100020).equals(options.patientId()))
             throw new IOException("Replacement identity verification failed.");
         for (DicomIO.Row row : DicomIO.rows(l)) {
             AttributeTag t = row.attribute().getTag(); int group = t.getGroup();
+            if (options.keepSiemensDiffusion() && !row.path().contains("/") && Policy.siemensDiffusionTag(l,t)) continue;
             if (t.isPrivate() || group == 0x0400 || group == 0xfffa || (group & 0xff00) == 0x6000 || row.vr().equals("UN"))
                 throw new IOException("A disallowed metadata element survived cleaning.");
             if (expectedUids.containsKey(row.path()) && !expectedUids.get(row.path()).equals(row.value()))
