@@ -68,6 +68,9 @@ public final class Policy {
     private final Map<java.nio.file.Path,LocalDate> randomDates=new HashMap<>();
     // Deliberately per-job: no global/static linkage and no identifier mapping written to disk.
     private final Map<String, String> uids = new HashMap<>();
+    private final Set<String> generatedUids = new HashSet<>();
+    /** Live, read-only view of every UID generated in this job (used by the identifier check). */
+    Set<String> generatedUids() { return Collections.unmodifiableSet(generatedUids); }
     private final Map<String, Integer> counts = new TreeMap<>();
     private final IdentifierPolicy identifierPolicy;
     private static final Set<Integer> ESSENTIAL = essentialTags();
@@ -130,7 +133,9 @@ public final class Policy {
         return uids.computeIfAbsent(old, k -> {
             UUID id = UUID.randomUUID();
             byte[] b = java.nio.ByteBuffer.allocate(16).putLong(id.getMostSignificantBits()).putLong(id.getLeastSignificantBits()).array();
-            return "2.25." + new BigInteger(1, b);
+            String uid = "2.25." + new BigInteger(1, b);
+            generatedUids.add(uid);
+            return uid;
         });
     }
     public void clean(AttributeList list) throws DicomException {

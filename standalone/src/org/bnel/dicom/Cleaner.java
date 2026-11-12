@@ -42,6 +42,8 @@ public final class Cleaner {
         public final Policy.Options options;
         public final List<String> skipped=new ArrayList<>();
         public final List<String> warnings=new ArrayList<>();
+        /** Non-blocking identifier-check findings (see ResidualGuard). */
+        public final List<ResidualGuard.Finding> identifierFindings=new ArrayList<>();
         public final Map<String,Integer> operations;
         public int unresolvedReferences;
         public final List<ReferenceDetail> referenceDetails=new ArrayList<>();
@@ -122,6 +124,7 @@ public final class Cleaner {
                          Map<String,ScanLabels.Labels> labels,List<Instance> imported,Progress progress,BooleanSupplier cancel)throws Exception {
         if(inputs.isEmpty())throw new IllegalArgumentException("Select folders or images to clean.");
         Policy policy=new Policy(options,null,identifiers);
+        ResidualGuard guard=new ResidualGuard();guard.generated(policy.generatedUids());
         Path stage=Files.createTempDirectory("bnel-cleaner-");
         Batch batch=new Batch(stage,options,"",policy.counts());
         Set<String> seen=new HashSet<>();Map<String,Integer> seriesNumbers=new LinkedHashMap<>();
@@ -141,6 +144,7 @@ public final class Cleaner {
                         originalByCleanUid.put(policy.mapUid(uid),uid);
                     }
                     PixelSafety.inspect(source);
+                    guard.collect(l);
                     Map<String,String> geometry=DicomIO.geometry(l),pixels=DicomIO.pixels(l),uidExpected=new HashMap<>();
                     for(DicomIO.Row row:DicomIO.rows(l))if(row.attribute().getTag().getGroup()!=2&&row.vr().equals("UI")&&UniqueIdentifierAttribute.isTransient(row.attribute().getTag())&&!row.value().isBlank()){
                         List<String> mapped=new ArrayList<>();for(String uid:row.value().split("\\\\"))mapped.add(policy.mapUid(uid));
@@ -162,6 +166,7 @@ public final class Cleaner {
                     if(!source.syntax().equals(verified.syntax()))throw new IOException("Transfer syntax changed unexpectedly");
                     if(!DicomIO.hash(input.source()).equals(input.sha256()))throw new IOException("Source changed during cleaning; import it again");
                     batch.outputs.add(new Output(input,out,DicomIO.hash(out),relative));seen.add(input.sop());
+                    guard.capture(seriesLabel(input),verified.list());guard.skipDate(policy.date());
                     newSops.add(Policy.value(verified.list(),0x00080018));
                     if(!DicomIO.isRegistration(input.sopClass()))imageFrames.add(Policy.value(verified.list(),0x00200052));
                 }catch(CancellationException e){throw e;}
@@ -191,9 +196,14 @@ public final class Cleaner {
                 String state=targets.isEmpty()?"Not loaded — target filename/path is unknown":targets.stream().anyMatch(selected::contains)?"Skipped during cleaning":"Imported but not selected for this export";
                 batch.referenceDetails.add(new ReferenceDetail(uid,entry.getKey(),targets,List.copyOf(new LinkedHashSet<>(entry.getValue())),state));
             }
+            progress.update("Checking retained metadata for identifiers",inputs.size(),inputs.size());
+            batch.identifierFindings.addAll(guard.findings());
+            if(guard.replacementLooksIdentifying(options.patientName())||guard.replacementLooksIdentifying(options.patientId()))
+                batch.identifierFindings.add(0,new ResidualGuard.Finding("Replacement identity","Replacement Patient Name / ID","contains an identifier from the source files",inputs.size()));
             progress.update("Metadata ready",inputs.size(),inputs.size());return batch;
         }catch(Throwable e){try{batch.close();}catch(IOException cleanup){e.addSuppressed(cleanup);}throw e;}
     }
+    static String seriesLabel(Instance i){String d=i.description()==null||i.description().isBlank()?"(no series description)":i.description();return i.modality()+" · "+d+" · series "+i.seriesNumber();}
     private static String reason(Exception e){return e instanceof IllegalArgumentException||e instanceof IOException?String.valueOf(e.getMessage()):"Could not process this instance ("+e.getClass().getSimpleName()+")";}
     private static void validateMetadata(AttributeList l, Policy.Options options, LocalDate date, Map<String,String> expectedUids) throws Exception {
         if (!Policy.value(l,0x00100010).equals(options.patientName()) || !Policy.value(l,0x00100020).equals(options.patientId()))

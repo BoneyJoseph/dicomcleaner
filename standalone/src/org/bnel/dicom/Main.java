@@ -194,8 +194,8 @@ public final class Main extends JFrame {
             Policy.Options options=new Policy.Options(patientName.getText(),patientId.getText(),dateMode.getSelectedIndex()==0?Policy.DateMode.FIXED:Policy.DateMode.RANDOM,LocalDate.parse(date.getText().strip()),minimal.isSelected(),folderDates);
             List<Cleaner.Instance> chosen=List.copyOf(selection),imported=List.copyOf(instances);invalidateBatch();
             IdentifierPolicy selectedPolicy=identifierPolicy;Map<String,ScanLabels.Labels> selectedLabels=Map.copyOf(labels);
-            runTask("Cleaning metadata",()->Cleaner.prepare(chosen,options,"",selectedPolicy,selectedLabels,imported,this::progress,cancellation::get),result->{batch=result;if(current!=null)display(current);refreshUnion(true);metadataTabs.setSelectedIndex(0);status.setText(batch.outputs.size()+" files cleaned · "+batch.skipped.size()+" skipped · "+(batch.outputs.isEmpty()?"No files to export":"Ready to export"));
-                if(!batch.skipped.isEmpty()||!batch.warnings.isEmpty()||!batch.referenceDetails.isEmpty())showText("Cleaning results",cleaningResults(batch));});
+            runTask("Cleaning metadata",()->Cleaner.prepare(chosen,options,"",selectedPolicy,selectedLabels,imported,this::progress,cancellation::get),result->{batch=result;if(current!=null)display(current);refreshUnion(true);metadataTabs.setSelectedIndex(0);status.setText(batch.outputs.size()+" files cleaned · "+batch.skipped.size()+" skipped · "+(batch.identifierFindings.isEmpty()?"":batch.identifierFindings.size()+" identifier warning(s) · ")+(batch.outputs.isEmpty()?"No files to export":"Ready to export"));
+                if(!batch.identifierFindings.isEmpty()||!batch.skipped.isEmpty()||!batch.warnings.isEmpty()||!batch.referenceDetails.isEmpty())showText("Cleaning results",cleaningResults(batch));});
 
         }catch(Exception e){Theme.error(this,e);}
     }
@@ -240,6 +240,12 @@ public final class Main extends JFrame {
     }
     static String cleaningResults(Cleaner.Batch batch){
         StringBuilder text=new StringBuilder(batch.outputs.size()+" files cleaned · "+batch.skipped.size()+" skipped\n");
+        if(!batch.identifierFindings.isEmpty()){
+            text.append("\nPossible identifiers in retained metadata (warning only; export is not blocked).\nEdit the series label (Scan labels) or add a tag-removal rule, then clean again:\n");
+            Map<String,List<ResidualGuard.Finding>> bySeries=new LinkedHashMap<>();
+            for(ResidualGuard.Finding f:batch.identifierFindings)bySeries.computeIfAbsent(f.series(),k->new ArrayList<>()).add(f);
+            bySeries.forEach((series,list)->{text.append("\n  ").append(series).append('\n');for(ResidualGuard.Finding f:list)text.append("    • ").append(f).append('\n');});
+        }
         if(!batch.skipped.isEmpty())text.append("\nSkipped files are not included in export:\n").append(String.join("\n",batch.skipped)).append('\n');
         if(!batch.warnings.isEmpty())text.append("\nProcessing notes:\n").append(String.join("\n",batch.warnings)).append('\n');
         if(!batch.referenceDetails.isEmpty()){
