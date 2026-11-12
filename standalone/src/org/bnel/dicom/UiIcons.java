@@ -35,6 +35,10 @@ final class UiIcons implements Icon {
             case "remove" -> {g.draw(new Ellipse2D.Double(1.5,1.5,13,13));path(g,4,8,12,8);}
             case "link" -> {g.rotate(-Math.PI/4,8,8);g.draw(new RoundRectangle2D.Double(5,0.5,6,9,6,6));g.draw(new RoundRectangle2D.Double(5,6.5,6,9,6,6));}
             case "alert" -> {g.setColor(Theme.WARNING);path(g,8,1.5,15,14,1,14,8,1.5);path(g,8,6,8,9.5);g.fill(new Ellipse2D.Double(7.2,11.2,1.6,1.6));}
+            case "more" -> {g.fill(new Ellipse2D.Double(2,7,2.4,2.4));g.fill(new Ellipse2D.Double(6.8,7,2.4,2.4));g.fill(new Ellipse2D.Double(11.6,7,2.4,2.4));}
+            case "collapseAll" -> {path(g,4,7,8,3,12,7);path(g,4,13,8,9,12,13);}
+            case "expandAll" -> {path(g,4,3,8,7,12,3);path(g,4,9,8,13,12,9);}
+            case "trash" -> {path(g,2,4,14,4);path(g,6,4,6,2,10,2,10,4);path(g,3.5,4,4.5,15,11.5,15,12.5,4);path(g,6.5,7,6.5,12);path(g,9.5,7,9.5,12);}
             case "search" -> {g.draw(new Ellipse2D.Double(1.5,1.5,9,9));path(g,9.5,9.5,14.5,14.5);}
             default -> {}
         }

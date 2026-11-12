@@ -82,7 +82,7 @@ final class SourceTree extends JTree {
                         String label=f.description().isBlank()?"Series "+f.seriesNumber():f.description();
                         String folders=String.join(" | ",series.stream().map(i->items.get(i).source().getParent().toString()).distinct().toList());
                         Node se=new Node(Kind.SERIES,f.modality()+" · "+label,folders,-1);st.add(se);
-                        for(int index:series){Cleaner.Instance instance=items.get(index);Node file=new Node(Kind.FILE,instance.toString(),instance.source().toString(),index);if(instance.likelyBurnedIn()){file.burnedIn=1;file.burnedInWhy=instance.burnedInHint();}leaves[index]=file;se.add(file);}
+                        for(int index:series){Cleaner.Instance instance=items.get(index);Node file=new Node(Kind.FILE,(instance.instanceNumber()>0?"Image "+instance.instanceNumber()+" · ":"")+instance.source().getFileName(),instance.source().toString(),index);if(instance.likelyBurnedIn()){file.burnedIn=1;file.burnedInWhy=instance.burnedInHint();}leaves[index]=file;se.add(file);}
                     }
                 }
             }

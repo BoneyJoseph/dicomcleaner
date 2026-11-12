@@ -47,7 +47,12 @@ final class ReviewDialog extends JFrame {
     final JSlider frame=new JSlider(1,1,1),zoom=new JSlider(25,400,100);
     final JSpinner width=new JSpinner(new SpinnerNumberModel(4096d,1d,1e12,10d)),level=new JSpinner(new SpinnerNumberModel(2048d,-1e12,1e12,10d));
     final JToggleButton draw=new JToggleButton("Draw blackout");
-    final JButton redact,reset,close,previous,next;
+    final JButton redact,reset,close,previous,next,more;
+    /** CT window presets (Hounsfield units). Entry 0 is the menu title; selecting applies and returns to it. */
+    static final String[][] CT_PRESETS={{"Window presets","",""},{"File default","",""},{"Brain","80","40"},{"Subdural","200","75"},{"Stroke","40","40"},{"Soft tissue","400","50"},{"Bone","2800","600"},{"Lung","1500","-600"}};
+    final JComboBox<String> presets=new JComboBox<>(java.util.Arrays.stream(CT_PRESETS).map(p->p[0]+(p[1].isEmpty()?"":"  "+p[1]+" / "+p[2])).toArray(String[]::new));
+    JPanel fpsBox;
+    Point wlStart;double wlWidth,wlLevel;
     boolean busy,setting,failed;
     int index=-1,frameCount;
     boolean closed,mutating;
@@ -80,7 +85,7 @@ final class ReviewDialog extends JFrame {
         play=Theme.button("Play",false,()->setPlaying(!playing));
         fps.addChangeListener(e->cine.setDelay(Math.max(1,1000/(Integer)fps.getValue())));
         fps.setToolTipText("Target playback rate in frames per second");
-        zoom.setPreferredSize(new Dimension(Theme.u(76),Theme.u(28)));SettingsStrip.fixed(width,84);SettingsStrip.fixed(level,84);SettingsStrip.fixed(fps,64);
+        zoom.setPreferredSize(new Dimension(Theme.u(76),Theme.u(28)));zoom.setMaximumSize(zoom.getPreferredSize());SettingsStrip.fixed(width,84);SettingsStrip.fixed(level,84);SettingsStrip.fixed(fps,64);
         zoom.setToolTipText("Zoom the image; Ctrl+mouse wheel also changes zoom");width.setToolTipText("Window width: adjust contrast");level.setToolTipText("Window level: adjust brightness");
         reset=Theme.button("Auto / Fit",false,this::autoWindow);
         draw.setIcon(new UiIcons("rectangle"));draw.setToolTipText("Draw rectangles over text or identifiers in the current cleaned image");
@@ -91,16 +96,24 @@ final class ReviewDialog extends JFrame {
         JPanel scrub=new JPanel(new BorderLayout(Theme.u(8),0));scrub.setOpaque(false);scrub.add(new JLabel("Stack"),BorderLayout.WEST);scrub.add(frame);scrub.add(frameText,BorderLayout.EAST);
         frameText.setPreferredSize(new Dimension(Theme.u(140),Theme.u(24)));frameText.setHorizontalAlignment(SwingConstants.RIGHT);frameText.setFont(Theme.bodyFont.deriveFont((float)Theme.u(12)));
         // Compact transport labels keep the functional name and explanatory tooltip intact.
-        previous.setText("Previous");next.setText("Next");Theme.equalButtons(32,previous,next);Theme.equalButtons(32,play);
+        previous.setText("");next.setText("");play.setText("");compactTransport=true;Theme.equalButtons(32,previous,play,next);   // icon-only media controls; names/tooltips unchanged
         markedCurrent.setOpaque(false);markedCurrent.setToolTipText("Flag this whole DICOM file for later exclusion or removal. Shortcut: M.");
         markedCurrent.addActionListener(e->{if(index>=0){Path p=inputs.get(index).source();if(markedCurrent.isSelected()){marked.add(p);reviewed.remove(p);if(batch!=null)batch.outputs.get(index).reviewed=false;}else marked.remove(p);refreshList();update();}});
         removeMarked=Theme.button("Exclude marked from export",false,this::excludeMarked);
         trashMarked=Theme.button("Move originals to Recycle Bin…",false,this::recycleMarked);
         restore=Theme.button("Undo exclusion",false,()->{if(index>=0&&!trashed.contains(inputs.get(index).source())){excluded.remove(inputs.get(index).source());refreshList();update();}});
         // Image adjustment and file disposition remain available when changing review tabs.
-        JPanel adjustments=Theme.line(new JLabel("Zoom"),zoom,new JLabel("Width"),width,new JLabel("Level"),level,reset);
-        ViewerTools controls=new ViewerTools(Theme.line(previous,play,next,Theme.line(new JLabel("fps"),fps)),scrub,adjustments,blackout);
+        presets.setName("Window presets");presets.setToolTipText("CT window presets (W / L in Hounsfield units). Right-drag on the image also adjusts window/level.");SettingsStrip.fixed(presets,170);
+        presets.addActionListener(e->{int i=presets.getSelectedIndex();if(i<=0||shown==null)return;
+            setting=true;if(i==1){width.setValue(Math.max(1d,shown.window));level.setValue(shown.center);}else{width.setValue(Double.parseDouble(CT_PRESETS[i][1]));level.setValue(Double.parseDouble(CT_PRESETS[i][2]));}
+            presets.setSelectedIndex(0);setting=false;canvas.render();});
+        JPanel adjustments=Theme.line(new JLabel("Zoom"),zoom,new JLabel("Width"),width,new JLabel("Level"),level,presets,reset);
+        fpsBox=Theme.line(new JLabel("fps"),fps);fpsBox.setVisible(false);
+        ViewerTools controls=new ViewerTools(Theme.line(previous,play,next,fpsBox),scrub,adjustments,blackout);
         preview.add(controls,BorderLayout.SOUTH);
+        // Dark image stage: image, transport, scrubber and adjustments on dark surfaces.
+        preview.setOpaque(true);preview.setBackground(Theme.STAGE);preview.setBorder(BorderFactory.createEmptyBorder(Theme.u(10),Theme.u(10),Theme.u(10),Theme.u(10)));
+        imageScroll.setBorder(BorderFactory.createLineBorder(Theme.STAGE_BORDER));Theme.darkStage(controls);
         tabs.addTab("Image review",preview);
         reportText.setEditable(false);reportText.setLineWrap(true);reportText.setWrapStyleWord(true);reportText.setMargin(new Insets(12,12,12,12));tabs.addTab("Report / text",Theme.scroll(reportText));
         RatioSplit tags=tagsSplit=new RatioSplit(JSplitPane.HORIZONTAL_SPLIT,Theme.card("Original · every tag",sourceTags),Theme.card("Cleaned · every tag",cleanTags),.5);tags.restore(viewSettings,"layout.viewer.tags.ratio");tags.setResizeWeight(.5);tags.setBorder(null);tags.setContinuousLayout(true);tabs.addTab("Full metadata",tags);tabs.addChangeListener(e->{if(tabs.getSelectedIndex()>0){setPlaying(false);loadDetails();}});
@@ -110,7 +123,15 @@ final class ReviewDialog extends JFrame {
         close=Theme.button("Close",false,this::closeReview);
         markSelected=Theme.button("Mark all selected",false,()->markSelection(true));
         unmarkSelected=Theme.button("Unmark selected",false,()->markSelection(false));
-        ViewerActions actionStrip=new ViewerActions(Theme.line(markedCurrent,selectUnmarked,markSelected,unmarkSelected),Theme.line(removeMarked,restore),Theme.line(trashMarked),Theme.line(close));bottom.add(actionStrip);
+        selectUnmarked.setText("Select unmarked");markSelected.setText("Mark selected");unmarkSelected.setText("Unmark selected");
+        JPopupMenu moreMenu=new JPopupMenu();
+        JMenuItem recycleItem=new JMenuItem("Move originals to Recycle Bin…",new UiIcons("trash"));recycleItem.setName("Move originals to Recycle Bin…");
+        recycleItem.setForeground(new Color(0xA33A2F));recycleItem.addActionListener(e->trashMarked.doClick());moreMenu.add(recycleItem);
+        JButton moreButton=new JButton("More",new UiIcons("more"));moreButton.setName("More");moreButton.setIconTextGap(Theme.u(6));
+        moreButton.setToolTipText("Less common actions, including moving original files to the Recycle Bin");
+        moreButton.addActionListener(e->{recycleItem.setEnabled(trashMarked.isEnabled());recycleItem.setToolTipText(trashMarked.getToolTipText());moreMenu.show(moreButton,0,-moreMenu.getPreferredSize().height-Theme.u(4));});
+        more=moreButton;
+        ViewerActions actionStrip=new ViewerActions(Theme.line(markedCurrent,Theme.group(selectUnmarked,markSelected,unmarkSelected)),Theme.line(removeMarked,restore),Theme.line(more),Theme.line(close));bottom.add(actionStrip);
         Runnable density=()->{
             int available=controls.getWidth();if(available<=0)return;
             int toolsMinimum=adjustments.getPreferredSize().width+(blackout.isVisible()?blackout.getPreferredSize().width+Theme.u(24):0);
@@ -118,7 +139,7 @@ final class ReviewDialog extends JFrame {
             int hysteresis=actionStrip.compact?Theme.u(40):0;
             boolean compact=available<Theme.u(700)||available<toolsMinimum+hysteresis||actionStrip.getWidth()<actionsMinimum+hysteresis;
             if(compact!=actionStrip.compact){actionStrip.arrange(compact);controls.arrange(compact);}else if(controls.stackBelow!=(available<Theme.u(680)))controls.arrange(compact);
-            boolean shortTransport=available<Theme.u(compactTransport?940:900);
+            boolean shortTransport=true;   // media controls are always icon-only
             if(shortTransport!=compactTransport){compactTransport=shortTransport;previous.setText(shortTransport?"":"Previous");next.setText(shortTransport?"":"Next");play.setText(shortTransport?"":playing?"Pause":"Play");
                 for(JButton b:new JButton[]{previous,next,play}){b.setPreferredSize(null);b.setMinimumSize(null);b.setMaximumSize(null);}Theme.equalButtons(32,previous,next);Theme.equalButtons(32,play);controls.revalidate();}
         };
@@ -182,7 +203,7 @@ final class ReviewDialog extends JFrame {
     private void autoWindow(){if(shown==null)return;setting=true;width.setValue(Math.max(1d,shown.window));level.setValue(shown.center);zoom.setValue(100);setting=false;canvas.render();}
     private void update(){
         boolean pixels=shown!=null&&shown.raw!=null;
-        width.setEnabled(!busy&&pixels&&shown.gray);level.setEnabled(!busy&&pixels&&shown.gray);reset.setEnabled(!busy&&pixels);zoom.setEnabled(!busy&&pixels);files.setEnabled(!mutating);frame.setEnabled(!mutating&&frame.getMaximum()>1);
+        width.setEnabled(!busy&&pixels&&shown.gray);level.setEnabled(!busy&&pixels&&shown.gray);presets.setEnabled(!busy&&pixels&&shown.gray&&index>=0&&"CT".equals(inputs.get(index).modality()));reset.setEnabled(!busy&&pixels);zoom.setEnabled(!busy&&pixels);files.setEnabled(!mutating);frame.setEnabled(!mutating&&frame.getMaximum()>1);
         draw.setEnabled(!busy&&batch!=null&&pixels&&shown.gray);redact.setEnabled(draw.isEnabled());previous.setEnabled(targetPosition>0);next.setEnabled(targetPosition<frame.getMaximum()-1);play.setEnabled(!mutating&&frame.getMaximum()>1);close.setEnabled(!mutating);
         markedCurrent.setEnabled(!busy&&index>=0&&!trashed.contains(inputs.get(index).source()));removeMarked.setEnabled(!busy&&!mutating&&index>=0);restore.setEnabled(!busy&&index>=0&&excluded.contains(inputs.get(index).source())&&!trashed.contains(inputs.get(index).source()));trashMarked.setEnabled(!busy&&!mutating&&index>=0&&FileDisposal.supported());
         trashMarked.setToolTipText(FileDisposal.supported()?ActionHelp.forButton("Move originals to Recycle Bin…"):"Recycle Bin unavailable; exclusion keeps the originals.");for(JButton b:new JButton[]{selectUnmarked,markSelected,unmarkSelected})b.setEnabled(!mutating);
@@ -192,7 +213,7 @@ final class ReviewDialog extends JFrame {
         Path path=inputs.get(i).source();if(trashed.contains(path))continue;if(value?marked.add(path):marked.remove(path))changed++;
         if(value){reviewed.remove(path);if(batch!=null)batch.outputs.get(i).reviewed=false;}
     }refreshList();if(index>=0)markedCurrent.setSelected(marked.contains(inputs.get(index).source()));status.setText(changed+" file(s) "+(value?"marked":"unmarked"));update();}
-    void setPlaying(boolean value){if(mutating)value=false;playing=value;if(value){followPlayback=true;if(targetPosition>=frame.getMaximum()-1)requestPosition(0);cine.start();}else cine.stop();if(play!=null){play.putClientProperty("FlatLaf.style",value?"background: #e1e8e1":"background: #ffffff");play.setText(compactTransport?"":value?"Pause":"Play");play.setIcon(UiIcons.forAction(value?"Pause":"Play"));}}
+    void setPlaying(boolean value){if(mutating)value=false;playing=value;if(value){followPlayback=true;if(targetPosition>=frame.getMaximum()-1)requestPosition(0);cine.start();}else cine.stop();if(play!=null){play.putClientProperty("FlatLaf.style",value?Theme.STAGE_BUTTON+"; background: #3E5446; foreground: #FFFFFF":Theme.STAGE_BUTTON);if(fpsBox!=null&&fpsBox.isVisible()!=value){fpsBox.setVisible(value);fpsBox.revalidate();}play.setText(compactTransport?"":value?"Pause":"Play");play.setIcon(UiIcons.forAction(value?"Pause":"Play"));}}
     private void redact(){
         if(canvas.areas.isEmpty()){Theme.error(this,new IllegalArgumentException("Enable Draw blackout and drag a rectangle over the image first."));return;}
         if(JOptionPane.showConfirmDialog(this,"Apply these rectangles to ALL "+frameCount+" frames in this instance?\nThe source file stays unchanged. Review the resulting pixels again.","Apply blackout",JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION)return;
@@ -235,11 +256,30 @@ final class ReviewDialog extends JFrame {
     final class Canvas extends JPanel {
         BufferedImage raw,display;final List<Rectangle2D.Double> areas=new ArrayList<>();Point2D start;Rectangle2D.Double pending;JScrollPane scroll;
         Canvas(){setBackground(Color.BLACK);setFocusable(true);MouseAdapter mouse=new MouseAdapter(){
-            public void mousePressed(MouseEvent e){requestFocusInWindow();if(!busy&&draw.isEnabled()&&draw.isSelected()&&raw!=null){start=toImage(e.getPoint());pending=null;}}
-            public void mouseDragged(MouseEvent e){if(!busy&&start!=null){Point2D end=toImage(e.getPoint());pending=new Rectangle2D.Double(Math.min(start.getX(),end.getX()),Math.min(start.getY(),end.getY()),Math.abs(start.getX()-end.getX()),Math.abs(start.getY()-end.getY()));repaint();}}
-            public void mouseReleased(MouseEvent e){if(pending!=null&&pending.width>=1&&pending.height>=1)areas.add(pending);start=null;pending=null;repaint();}
+            public void mousePressed(MouseEvent e){requestFocusInWindow();
+                if(SwingUtilities.isRightMouseButton(e)&&width.isEnabled()){wlStart=e.getPoint();wlWidth=((Number)width.getValue()).doubleValue();wlLevel=((Number)level.getValue()).doubleValue();setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));return;}
+                if(SwingUtilities.isLeftMouseButton(e)&&!busy&&draw.isEnabled()&&draw.isSelected()&&raw!=null){start=toImage(e.getPoint());pending=null;}}
+            public void mouseDragged(MouseEvent e){
+                if(wlStart!=null){double step=Math.max(.5,wlWidth/300d);   // right-drag: horizontal = width (contrast), vertical = level (brightness)
+                    setting=true;width.setValue(Math.max(1d,wlWidth+(e.getX()-wlStart.x)*step));level.setValue(wlLevel+(e.getY()-wlStart.y)*step);setting=false;render();return;}
+                if(!busy&&start!=null){Point2D end=toImage(e.getPoint());pending=new Rectangle2D.Double(Math.min(start.getX(),end.getX()),Math.min(start.getY(),end.getY()),Math.abs(start.getX()-end.getX()),Math.abs(start.getY()-end.getY()));repaint();}}
+            public void mouseReleased(MouseEvent e){if(wlStart!=null){wlStart=null;setCursor(Cursor.getPredefinedCursor(draw.isSelected()?Cursor.CROSSHAIR_CURSOR:Cursor.DEFAULT_CURSOR));return;}if(pending!=null&&pending.width>=1&&pending.height>=1)areas.add(pending);start=null;pending=null;repaint();}
             public void mouseWheelMoved(MouseWheelEvent e){wheel(e);}
         };addMouseListener(mouse);addMouseMotionListener(mouse);addMouseWheelListener(mouse);}
+        /** Corner overlays (slice, window/level, zoom). Deliberately no series description or names, so screenshots stay clean. */
+        void paintOverlays(Graphics2D g0){
+            if(index<0||index>=inputs.size())return;
+            Graphics2D g=(Graphics2D)g0.create();g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g.setFont(Theme.bodyFont.deriveFont((float)Theme.u(12)));FontMetrics m=g.getFontMetrics();Rectangle v=getVisibleRect();int pad=Theme.u(10),lh=m.getHeight();
+            Cleaner.Instance in=inputs.get(index);
+            String tl=in.modality()+" · Series "+in.seriesNumber()+(in.instanceNumber()>0?" · Image "+in.instanceNumber():"");
+            String tr="Slice "+(position+1)+" / "+frame.getMaximum()+(frameCount>1?" · Frame "+(shownFrame+1)+" / "+frameCount:"");
+            String bl=shown!=null&&shown.gray?String.format(java.util.Locale.ROOT,"W %.0f  L %.0f",((Number)width.getValue()).doubleValue(),((Number)level.getValue()).doubleValue()):"";
+            String br="Zoom "+zoom.getValue()+"%";
+            text(g,tl,v.x+pad,v.y+pad+m.getAscent());text(g,tr,v.x+v.width-pad-m.stringWidth(tr),v.y+pad+m.getAscent());
+            text(g,bl,v.x+pad,v.y+v.height-pad-lh+m.getAscent());text(g,br,v.x+v.width-pad-m.stringWidth(br),v.y+v.height-pad-lh+m.getAscent());g.dispose();
+        }
+        private void text(Graphics2D g,String s,int x,int y){if(s.isEmpty())return;g.setColor(new Color(0,0,0,170));g.drawString(s,x+1,y+1);g.setColor(new Color(0xE6E8E3));g.drawString(s,x,y);}
         double scale(){if(raw==null||scroll==null)return 1;Dimension v=scroll.getViewport().getExtentSize();return Math.max(.01,Math.min((v.width-4d)/raw.getWidth(),(v.height-4d)/raw.getHeight())*zoom.getValue()/100d);}
         double ox(){return raw==null?0:Math.max(0,(getWidth()-raw.getWidth()*scale())/2);}
         double oy(){return raw==null?0:Math.max(0,(getHeight()-raw.getHeight()*scale())/2);}
@@ -252,6 +292,7 @@ final class ReviewDialog extends JFrame {
             Graphics2D q=(Graphics2D)g.create();q.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BILINEAR);
             q.translate(ox(),oy());q.scale(scale(),scale());q.drawImage(display,0,0,null);q.setStroke(new BasicStroke((float)(2/scale())));
             for(Rectangle2D area:areas){q.setColor(new Color(50,120,255,120));q.fill(area);q.setColor(Color.CYAN);q.draw(area);}if(pending!=null){q.setColor(Color.CYAN);q.draw(pending);}q.dispose();
+            paintOverlays((Graphics2D)g);
         }
     }
 }

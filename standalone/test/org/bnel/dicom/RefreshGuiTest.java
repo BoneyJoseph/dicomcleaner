@@ -74,7 +74,7 @@ public final class RefreshGuiTest {
             edt(()->{v.queueStep(1);return null;});waitFor(()->!v.busy,"transport after manual browse");check(edt(()->v.followPlayback),"explicit transport resumes follow mode");
             for(int width:new int[]{1600,1280,960}){
                 edt(()->{v.setSize(Theme.u(width),Theme.u(width==960?700:1000));v.validate();return null;});Thread.sleep(200);
-                edt(()->{for(JComponent c:new JComponent[]{v.previous,v.play,v.next,v.fps,v.frame,v.zoom,v.width,v.level,v.reset,v.markedCurrent,v.selectUnmarked,v.markSelected,v.unmarkSelected,v.removeMarked,v.restore,v.trashMarked,v.close})GuiTest.visible(c,c.getName());check(v.frame.getWidth()>=Theme.u(80),"usable slider width at "+width);return null;});
+                edt(()->{for(JComponent c:new JComponent[]{v.previous,v.play,v.next,v.frame,v.zoom,v.width,v.level,v.reset,v.markedCurrent,v.selectUnmarked,v.markSelected,v.unmarkSelected,v.removeMarked,v.restore,v.more,v.presets,v.close})GuiTest.visible(c,c.getName());check(v.frame.getWidth()>=Theme.u(80),"usable slider width at "+width);return null;});
                 GuiTest.screenshot(v,shots.resolve("refresh-viewer-"+width+"-scale"+System.getProperty("flatlaf.uiScale","1")+".png"));
             }
             edt(()->{v.dispose();return null;});
