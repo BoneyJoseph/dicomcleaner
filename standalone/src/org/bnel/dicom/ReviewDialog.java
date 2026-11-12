@@ -52,6 +52,8 @@ final class ReviewDialog extends JFrame {
     static final String[][] CT_PRESETS={{"Window presets","",""},{"File default","",""},{"Brain","80","40"},{"Subdural","200","75"},{"Stroke","40","40"},{"Soft tissue","400","50"},{"Bone","2800","600"},{"Lung","1500","-600"}};
     final JComboBox<String> presets=new JComboBox<>(java.util.Arrays.stream(CT_PRESETS).map(p->p[0]+(p[1].isEmpty()?"":"  "+p[1]+" / "+p[2])).toArray(String[]::new));
     JPanel fpsBox;
+    /** Background decoding window around the current slice (was 12 ahead / 3 behind). */
+    static final int PREFETCH_AHEAD=48,PREFETCH_BEHIND=8;
     Point wlStart;double wlWidth,wlLevel;
     boolean busy,setting,failed;
     int index=-1,frameCount;
@@ -171,7 +173,7 @@ final class ReviewDialog extends JFrame {
         canvas.start=null;canvas.pending=null;
         if(key.file()!=index){sourceTags.setData(null);cleanTags.setData(null);reportText.setText("Loading selected file…");}
         setting=true;frame.setValue(target+1);setting=false;
-        List<ViewerFrames.Key> ahead=new ArrayList<>();for(int delta=1;delta<=12;delta++)if(target+delta<frame.getMaximum())ahead.add(keyAt(target+delta));for(int delta=1;delta<=3;delta++)if(target-delta>=0)ahead.add(keyAt(target-delta));
+        List<ViewerFrames.Key> ahead=new ArrayList<>();for(int delta=1;delta<=PREFETCH_AHEAD;delta++)if(target+delta<frame.getMaximum())ahead.add(keyAt(target+delta));for(int delta=1;delta<=PREFETCH_BEHIND;delta++)if(target-delta>=0)ahead.add(keyAt(target-delta));
         status.setText("Loading slice "+(target+1)+"…");
         if(trashed.contains(inputs.get(key.file()).source())){showResult(new ViewerFrames.Result(key,null,"This original was moved to Recycle Bin."),target);return;}
         frames.request(key,ahead,result->showResult(result,target));update();

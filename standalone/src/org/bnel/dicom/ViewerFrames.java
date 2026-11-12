@@ -40,7 +40,11 @@ final class ViewerFrames implements AutoCloseable {
     private final LinkedHashMap<Key,Frame> cache=new LinkedHashMap<>(128,.75f,true);
     private final long budget;private long bytes,generation;private boolean running,closed;private Request pending;
     private SourceImage image;private ReportPreview report;private AttributeList attributes;private int opened=-1;
-    ViewerFrames(List<Path> paths){this(paths,Math.min(192L*1024*1024,Runtime.getRuntime().maxMemory()/6));}
+    /** Decoded-frame cache: a quarter of the Java heap, capped at 4 GB (was 192 MB). The packaged app may use up
+     *  to 65% of RAM, so a 64 GB PC gets the full 4 GB (~1,300 CT 512x512 frames); smaller PCs scale down. */
+    static final long MAX_CACHE_BYTES=4L*1024*1024*1024;
+    static long defaultBudget(){return Math.min(MAX_CACHE_BYTES,Runtime.getRuntime().maxMemory()/4);}
+    ViewerFrames(List<Path> paths){this(paths,defaultBudget());}
     ViewerFrames(List<Path> paths,long budget){this.paths=List.copyOf(paths);this.budget=budget;}
     synchronized int cached(){return cache.size();}synchronized long cachedBytes(){return bytes;}
     void request(Key key,List<Key> ahead,Consumer<Result> result){

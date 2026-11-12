@@ -147,7 +147,7 @@ public final class GuiTest {
             edt(()->{cine.frame.setValue(1);return null;});waitFor(()->!cine.busy&&cine.index==0,"cine reset");long start=System.nanoTime();
             edt(()->{cine.fps.setValue(20);cine.play.doClick();return null;});EngineTest.check(edt(()->cine.fpsBox.isVisible()),"frame rate shown while playing");waitFor(()->cine.index>=15,"cine advances automatically");
             edt(()->{cine.play.doClick();return null;});int stopped=edt(()->cine.index);Thread.sleep(200);EngineTest.check(edt(()->!cine.playing&&cine.index<=stopped+1),"pause stops playback");
-            EngineTest.check(cine.frames.cachedBytes()<=192L*1024*1024,"frame cache bounded");System.out.println("Cine: at least 15 slices in "+((System.nanoTime()-start)/1_000_000)+" ms, including test polling/pause");
+            EngineTest.check(cine.frames.cachedBytes()<=ViewerFrames.defaultBudget()&&ViewerFrames.defaultBudget()<=ViewerFrames.MAX_CACHE_BYTES,"frame cache bounded");System.out.println("Cine: at least 15 slices in "+((System.nanoTime()-start)/1_000_000)+" ms, including test polling/pause");
             edt(()->{cine.close.doClick();return null;});waitFor(()->!cine.isVisible(),"viewer closes during background prefetch");
             ReviewDialog large=edt(()->new ReviewDialog(a,Collections.nCopies(8000,a.instances.get(0)),null));
             EngineTest.check(edt(()->large.frame.getMaximum()==8000&&large.files.inputs.size()==8000),"8000-instance list and slider range");
