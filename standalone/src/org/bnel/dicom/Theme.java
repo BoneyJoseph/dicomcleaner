@@ -111,7 +111,7 @@ final class Theme {
         Color surface=component.getBackground();p.setBackground(surface);p.getViewport().setBackground(surface);p.setOpaque(true);p.getViewport().setOpaque(true);
         JPanel corner=new JPanel();corner.setBackground(surface);p.setCorner(JScrollPane.LOWER_RIGHT_CORNER,corner);
         if(component instanceof JTable table&&table.getAutoResizeMode()==JTable.AUTO_RESIZE_OFF){
-            int last=table.getClientProperty("bnel.flexColumn") instanceof Integer i?i:table.getColumnCount()-1,min=table.getColumnModel().getColumn(last).getPreferredWidth();
+            int last=table.getClientProperty("bnel.flexColumn") instanceof Integer i?i:table.getColumnCount()-1,min=table.getClientProperty("bnel.flexMin") instanceof Integer m?m:table.getColumnModel().getColumn(last).getPreferredWidth();
             p.getViewport().addComponentListener(new ComponentAdapter(){public void componentResized(ComponentEvent e){
                 int used=0;for(int n=0;n<table.getColumnCount();n++)if(n!=last)used+=table.getColumnModel().getColumn(n).getWidth();
                 int width=Math.max(min,p.getViewport().getWidth()-used);table.getColumnModel().getColumn(last).setPreferredWidth(width);table.getColumnModel().getColumn(last).setWidth(width);

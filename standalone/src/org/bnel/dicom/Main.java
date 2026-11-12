@@ -31,8 +31,8 @@ public final class Main extends JFrame {
     final JLabel originalName=new JLabel("Select any individual DICOM instance"), cleanedName=new JLabel("Clean a selection to compare"),
         status=new JLabel(" "), counts=new JLabel("No files imported"), percent=new JLabel(" ");
     final JTextField patientName=new JTextField("",14),patientId=new JTextField("",14),date=new JTextField("2000-01-01",10);
-    final JCheckBox minimal=new JCheckBox("Essential research metadata");
-    final JCheckBox siemens=new JCheckBox("Keep Siemens diffusion/fMRI tags");
+    final JCheckBox minimal=new JCheckBox("Essential metadata");
+    final JCheckBox siemens=new JCheckBox("Keep DWI/fMRI tags");
     final JCheckBox hierarchy=new JCheckBox("Preserve imported hierarchy",true),originalNames=new JCheckBox("Retain original folder/file names"),
         zip=new JCheckBox("ZIP export"),dicomdir=new JCheckBox("Include DICOMDIR");
     final JComboBox<String> dateMode=new JComboBox<>(new String[]{"Fixed date","Random per folder"});
@@ -68,6 +68,7 @@ public final class Main extends JFrame {
         metadataSplit=new RatioSplit(JSplitPane.HORIZONTAL_SPLIT,Theme.card("Original",op),Theme.card("Cleaned",cp),.5);metadataSplit.setResizeWeight(.5);metadataSplit.setBorder(null);metadataSplit.setContinuousLayout(true);
         metadataSplit.getLeftComponent().setMinimumSize(new Dimension(Theme.u(240),160));metadataSplit.getRightComponent().setMinimumSize(new Dimension(Theme.u(240),160));
         metadataSplit.restore(settings,"layout.instance.ratio");
+        allOriginal.peer=allCleaned;allCleaned.peer=allOriginal;
         ((RatioSplit)allMetadata.split).restore(settings,"layout.aggregate.ratio");
         ((RatioSplit)allOriginal.split).restore(settings,"layout.detail.ratio");((RatioSplit)allCleaned.split).restore(settings,"layout.detail.ratio");
         metadataTabs.addTab("All metadata",allMetadata);metadataTabs.addTab("Instance comparison",metadataSplit);
@@ -91,7 +92,7 @@ public final class Main extends JFrame {
         minimal.setOpaque(false);minimal.setSelected(settings.bool("minimal",true));minimal.setToolTipText("<html><b>Additional removal beyond the default cleaner</b><br>Uses an allowlist for classic CT/MR and registration objects.<br>Also drops optional tags outside that list, including extra acquisition,<br>workflow, presentation and descriptive metadata—even if not identifying.<br>Examples: Acquisition Duration (0018,9073), Exposure in µAs<br>(0018,1153), and Detector Temperature (0018,7001).<br>Keeps pixels, dimensions, geometry, registration matrices, scan options,<br>MR acquisition type, key timing parameters and your chosen scan labels.<br>Enhanced/secondary-capture images use the broader cleaner to preserve<br>their required structures. This does not inspect or change image pixels.</html>");
         minimal.addActionListener(e->{invalidateBatch();persist(false);});
         siemens.setOpaque(false);siemens.setSelected(settings.bool("siemensDiffusion",false));
-        siemens.setToolTipText("<html><b>Keep a short, vetted list of Siemens private tags</b><br>Needed to analyse classic Siemens DWI and fMRI (e.g. with dcm2niix):<br>b-value, gradient direction, B-matrix, mosaic layout, slice timing<br>and the CSA image header. All other private tags are still removed.<br>The CSA series header (full protocol text) is never kept. Text inside<br>kept tags is scanned by the identifier check. Off by default.</html>");
+        siemens.setToolTipText("<html><b>Keep a short, vetted list of Siemens private tags (classic Siemens DWI/fMRI)</b><br>Needed to analyse classic Siemens DWI and fMRI (e.g. with dcm2niix):<br>b-value, gradient direction, B-matrix, mosaic layout, slice timing<br>and the CSA image header. All other private tags are still removed.<br>The CSA series header (full protocol text) is never kept. Text inside<br>kept tags is scanned by the identifier check. Off by default.</html>");
         siemens.addActionListener(e->{invalidateBatch();persist(false);});
         hierarchy.setToolTipText("Preserve the imported folder nesting in the export.");
         originalNames.setToolTipText(ActionHelp.tip("Keep the original folder and file names; leave off to use neutral names while preserving nesting."));
@@ -199,7 +200,7 @@ public final class Main extends JFrame {
             List<Cleaner.Instance> chosen=List.copyOf(selection),imported=List.copyOf(instances);invalidateBatch();
             IdentifierPolicy selectedPolicy=identifierPolicy;Map<String,ScanLabels.Labels> selectedLabels=Map.copyOf(labels);
             runTask("Cleaning metadata",()->Cleaner.prepare(chosen,options,"",selectedPolicy,selectedLabels,imported,this::progress,cancellation::get),result->{batch=result;if(current!=null)display(current);refreshUnion(true);metadataTabs.setSelectedIndex(0);status.setText(batch.outputs.size()+" files cleaned · "+batch.skipped.size()+" skipped · "+(batch.identifierFindings.isEmpty()?"":batch.identifierFindings.size()+" identifier warning(s) · ")+(batch.outputs.isEmpty()?"No files to export":"Ready to export"));
-                if(!batch.identifierFindings.isEmpty()||!batch.skipped.isEmpty()||!batch.warnings.isEmpty()||!batch.referenceDetails.isEmpty())showText("Cleaning results",cleaningResults(batch));});
+                if(!batch.identifierFindings.isEmpty()||!batch.skipped.isEmpty()||!batch.warnings.isEmpty()||!batch.referenceDetails.isEmpty()){Cleaner.Batch shown=batch;SwingUtilities.invokeLater(()->showText("Cleaning results",cleaningResults(shown)));}});
 
         }catch(Exception e){Theme.error(this,e);}
     }

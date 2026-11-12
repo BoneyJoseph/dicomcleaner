@@ -37,7 +37,7 @@ final class SettingsStrip extends JPanel {
     void summary(){
         java.util.List<String> meta=new java.util.ArrayList<>(),export=new java.util.ArrayList<>();
         if(app.minimal.isSelected())meta.add("essential metadata");
-        if(app.siemens.isSelected())meta.add("Siemens DWI/fMRI tags");
+        if(app.siemens.isSelected())meta.add("DWI/fMRI tags kept");
         if(app.hierarchy.isSelected())export.add("hierarchy");
         if(app.originalNames.isSelected())export.add("original names");
         if(app.zip.isSelected())export.add("ZIP");

@@ -16,6 +16,7 @@ public final class GuiTest {
     static <T>T edt(Callable<T> action)throws Exception{AtomicReference<T> result=new AtomicReference<>();AtomicReference<Throwable> error=new AtomicReference<>();SwingUtilities.invokeAndWait(()->{try{result.set(action.call());}catch(Throwable e){error.set(e);}});if(error.get()!=null)throw new AssertionError(error.get());return result.get();}
     static void waitFor(Callable<Boolean> condition,String message)throws Exception{long end=System.nanoTime()+60_000_000_000L;while(System.nanoTime()<end){if(edt(condition))return;Thread.sleep(80);}throw new AssertionError("Timed out: "+message);}
     // Capture actual app content; native OS caption bars are not painted by Swing.
+    static Component find(Container root,Class<?> type){for(Component c:root.getComponents()){if(type.isInstance(c))return c;if(c instanceof Container k){Component f=find(k,type);if(f!=null)return f;}}return null;}
     static void screenshot(Window w,Path target)throws Exception{edt(()->{Container pane=((RootPaneContainer)w).getContentPane();BufferedImage image=new BufferedImage(pane.getWidth(),pane.getHeight(),BufferedImage.TYPE_INT_RGB);Graphics2D g=image.createGraphics();pane.paintAll(g);g.dispose();ImageIO.write(image,"png",target.toFile());return null;});}
     static void visible(JComponent c,String name){Rectangle r=c.getVisibleRect();if(r.width<c.getWidth()-2||r.height<c.getHeight()-2)throw new AssertionError("Clipped control: "+name+" visible="+r+" size="+c.getSize());}
     static boolean buttonExists(Container root,String text){for(Component c:root.getComponents()){if(c instanceof AbstractButton b&&b.getText().equals(text))return true;if(c instanceof Container container&&buttonExists(container,text))return true;}return false;}
@@ -36,6 +37,12 @@ public final class GuiTest {
             EngineTest.check(!Files.readString(a.settings.path).contains("Research^001")&&!Files.readString(a.settings.path).contains("BNEL-001"),"mirrored identity is not persisted");
             edt(()->{a.clean.doClick();return null;});
             waitFor(()->a.active==null&&a.batch!=null,"clean button action");waitFor(()->a.allCleaned.index.files().size()==2,"cleaned union");
+            // The synthetic Series Description contains the patient's name: the identifier check must report it (warning only).
+            waitFor(()->Arrays.stream(Window.getWindows()).anyMatch(w->w instanceof JDialog d&&d.isVisible()&&"Cleaning results".equals(d.getTitle())),"identifier warnings shown after cleaning");
+            edt(()->{for(Window w:Window.getWindows())if(w instanceof JDialog d&&d.isVisible()&&"Cleaning results".equals(d.getTitle())){
+                JTextArea text=(JTextArea)((JScrollPane)GuiTest.find(d.getContentPane(),JScrollPane.class)).getViewport().getView();
+                EngineTest.check(text.getText().contains("Possible identifiers in retained metadata")&&text.getText().contains("SeriesDescription"),"results list the Series Description warning");
+                EngineTest.check(!a.cancel.isVisible()&&a.export.isEnabled(),"main window settled and export still available behind the warning");d.dispose();}return null;});
             for(Dimension size:List.of(new Dimension(3840,2160),new Dimension(2560,1440),new Dimension(1920,1080),new Dimension(1600,1000),new Dimension(1280,800))){
                 edt(()->{a.setSize(size);a.validate();return null;});Thread.sleep(200);
                 edt(()->{for(JButton b:new JButton[]{a.importFolder,a.addFiles,a.clean,a.review,a.export})visible(b,b.getText());if(a.settingsStrip.compact){EngineTest.check(SwingUtilities.isDescendingFrom(a.identifiers,a.settingsStrip.metadataPopup)&&SwingUtilities.isDescendingFrom(a.scanLabels,a.settingsStrip.metadataPopup),"compact metadata options remain available in bottom popover");visible(a.settingsStrip.metadataButton,"Metadata options");}else{visible(a.identifiers,"Identifier rules");visible(a.scanLabels,"Scan labels");}visible(a.patientName,"patient name");visible(a.patientId,"patient ID");
@@ -47,7 +54,7 @@ public final class GuiTest {
             EngineTest.check(edt(()->a.allOriginal.table.getRowCount()>0&&a.allCleaned.table.getRowCount()>0),"shared search filters both metadata panes");
             EngineTest.check(edt(()->a.allCleaned.table.getRowCount()<a.allCleaned.index.tags().size()),"cleaned search listener follows shared document");
             edt(()->{a.allOriginal.table.setRowSelectionInterval(0,0);return null;});EngineTest.check(edt(()->a.allOriginal.selectedPath().equals(a.allCleaned.selectedPath())),"tag selection links corresponding path");
-            edt(()->{a.allOriginal.filter.setText("0019");a.allOriginal.table.setRowSelectionInterval(0,0);return null;});
+            edt(()->{a.allOriginal.filter.setText("(0x0019,0x1010)");a.allOriginal.table.setRowSelectionInterval(0,0);return null;});
             EngineTest.check(edt(()->a.allCleaned.table.getRowCount()==0&&a.allCleaned.details.getRowCount()==2&&a.allCleaned.details.getValueAt(0,2).toString().contains("absent")),"removed tag has explicit absent values in cleaned pane");
             edt(()->{a.allOriginal.filter.setText("");a.allOriginal.selectPath(a.allOriginal.index.tags().stream().filter(t->t.name().equals("PatientName")).findFirst().orElseThrow().path());a.setSize(1500,1000);a.validate();return null;});Thread.sleep(200);
             edt(()->{a.allOriginal.split.setDividerLocation(330);return null;});EngineTest.check(edt(()->a.allCleaned.split.getDividerLocation()==a.allOriginal.split.getDividerLocation()),"per-file detail splits remain aligned");
