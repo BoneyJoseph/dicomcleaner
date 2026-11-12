@@ -20,6 +20,8 @@ final class SourceTree extends JTree {
         final int file;
         int[] members=new int[0];
         int marked, reviewed, excluded;
+        int burnedIn;   // files likely to carry burned-in text (metadata cues; see Cleaner.burnedInHint)
+        String burnedInWhy="";
         Node(Kind kind,String title,String location,int file){super(title);this.kind=kind;this.title=title;this.location=location;this.file=file;}
         @Override public String toString(){
             String flags=(marked>0?" · "+marked+" marked":"")+(excluded>0?" · "+excluded+" excluded":"")+(reviewed>0?" · "+reviewed+" reviewed":"");
@@ -80,16 +82,17 @@ final class SourceTree extends JTree {
                         String label=f.description().isBlank()?"Series "+f.seriesNumber():f.description();
                         String folders=String.join(" | ",series.stream().map(i->items.get(i).source().getParent().toString()).distinct().toList());
                         Node se=new Node(Kind.SERIES,f.modality()+" · "+label,folders,-1);st.add(se);
-                        for(int index:series){Cleaner.Instance instance=items.get(index);Node file=new Node(Kind.FILE,instance.toString(),instance.source().toString(),index);leaves[index]=file;se.add(file);}
+                        for(int index:series){Cleaner.Instance instance=items.get(index);Node file=new Node(Kind.FILE,instance.toString(),instance.source().toString(),index);if(instance.likelyBurnedIn()){file.burnedIn=1;file.burnedInWhy=instance.burnedInHint();}leaves[index]=file;se.add(file);}
                     }
                 }
             }
         }
-        collect(root);order=root.members.clone();filteredModel=new FilterModel(root);setModel(filteredModel);collapseToSeries();firePropertyChange("instanceCount",previous,items.size());
+        collect(root);sumBurnedIn(root);order=root.members.clone();filteredModel=new FilterModel(root);setModel(filteredModel);collapseToSeries();firePropertyChange("instanceCount",previous,items.size());
     }
     private static Map<String,List<Integer>> groups(List<Integer> indices,java.util.function.IntFunction<String> key){
         Map<String,List<Integer>> result=new LinkedHashMap<>();for(int i:indices)result.computeIfAbsent(key.apply(i),k->new ArrayList<>()).add(i);return result;
     }
+    private static int sumBurnedIn(Node node){if(node.file>=0)return node.burnedIn;int n=0;for(int c=0;c<node.getChildCount();c++)n+=sumBurnedIn((Node)node.getChildAt(c));return node.burnedIn=n;}
     private static int[] collect(Node node){
         if(node.file>=0)return node.members=new int[]{node.file};
         java.util.stream.IntStream.Builder b=java.util.stream.IntStream.builder();
@@ -134,16 +137,16 @@ final class SourceTree extends JTree {
         }
         super.processMouseEvent(event);
     }
-    @Override public String getToolTipText(MouseEvent e){TreePath path=getClosestPathForLocation(e.getX(),e.getY());Rectangle r=path==null?null:getPathBounds(path);if(r==null||e.getY()<r.y||e.getY()>=r.y+r.height)return null;Node n=(Node)path.getLastPathComponent();return "<html>"+escape(n.toString())+"<br>"+escape(n.location)+"</html>";}
+    @Override public String getToolTipText(MouseEvent e){TreePath path=getClosestPathForLocation(e.getX(),e.getY());Rectangle r=path==null?null:getPathBounds(path);if(r==null||e.getY()<r.y||e.getY()>=r.y+r.height)return null;Node n=(Node)path.getLastPathComponent();return "<html>"+escape(n.toString())+"<br>"+escape(n.location)+(n.burnedIn==0?"":"<br><b>"+(n.kind==Kind.FILE?"May contain burned-in text: "+escape(n.burnedInWhy):n.burnedIn+" file(s) may contain burned-in text")+"</b><br>Check the image, then remove or black out if needed.")+"</html>";}
     private static String escape(String text){return text.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;");}
     final class RowRenderer extends JPanel implements TreeCellRenderer {
         final JLabel label=new JLabel(),badge=new JLabel();
         RowRenderer(){super(new BorderLayout(Theme.u(8),0));setOpaque(false);label.setOpaque(false);badge.setOpaque(false);add(label);add(badge,BorderLayout.EAST);setBorder(BorderFactory.createEmptyBorder(0,3,0,6));}
         public Component getTreeCellRendererComponent(JTree tree,Object value,boolean selected,boolean expanded,boolean leaf,int row,boolean focus){
             Node n=(Node)value;setFont(tree.getFont().deriveFont(Font.PLAIN));label.setFont(getFont());badge.setFont(getFont());label.putClientProperty("html.disable",true);
-            label.setText(n.kind==Kind.FILE?n.toString():n.title+(n.marked>0?" · "+n.marked+" marked":"")+(n.excluded>0?" · "+n.excluded+" excluded":""));
+            label.setText(n.kind==Kind.FILE?n.toString():n.title+(n.marked>0?" · "+n.marked+" marked":"")+(n.excluded>0?" · "+n.excluded+" excluded":"")+(n.burnedIn>0?" · "+n.burnedIn+" may have burned-in text":""));
             label.setForeground(n.excluded>0?Theme.MUTED:n.marked>0?Theme.WARNING:Theme.INK);badge.setForeground(Theme.MUTED);
-            label.setIcon(new UiIcons(n.marked>0?"flag":n.kind==Kind.FILE?(n.reviewed>0?"check":"file"):"folder"));label.setIconTextGap(Theme.u(6));
+            label.setIcon(new UiIcons(n.marked>0?"flag":n.burnedIn>0&&n.excluded<n.members.length?"alert":n.kind==Kind.FILE?(n.reviewed>0?"check":"file"):"folder"));label.setIconTextGap(Theme.u(6));
             badge.setHorizontalAlignment(SwingConstants.RIGHT);badge.setPreferredSize(new Dimension(n.kind==Kind.FILE?0:Theme.u(44),Theme.u(26)));badge.setText(n.kind==Kind.FILE?"":String.valueOf(n.members.length));
             return this;
         }

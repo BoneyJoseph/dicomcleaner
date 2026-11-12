@@ -132,7 +132,7 @@ public final class GuiTest {
             edt(()->{
                 Cleaner.Instance item=a.instances.get(0);
                 Path other=root.resolve("second-import");
-                Cleaner.Instance moved=new Cleaner.Instance(other.resolve("slice.dcm"),other,Path.of("slice.dcm"),item.sha256(),item.sop(),item.sopClass(),item.study(),item.series(),item.patientKey(),item.patientName(),item.patientId(),item.modality(),item.seriesNumber(),item.instanceNumber(),item.frames(),item.description(),item.problem(),item.studyDate());
+                Cleaner.Instance moved=new Cleaner.Instance(other.resolve("slice.dcm"),other,Path.of("slice.dcm"),item.sha256(),item.sop(),item.sopClass(),item.study(),item.series(),item.patientKey(),item.patientName(),item.patientId(),item.modality(),item.seriesNumber(),item.instanceNumber(),item.frames(),item.description(),item.problem(),item.studyDate(),item.burnedInHint());
                 SourceTree t=new SourceTree();t.setInstances(List.of(item,moved,item));
                 EngineTest.check(((SourceTree.Node)t.getModel().getRoot()).getChildCount()==2,"same series imported from separate folders stays under separate source roots");
                 EngineTest.check(Arrays.equals(t.order,new int[]{0,2,1}),"tree order is grouped by actual import folder");

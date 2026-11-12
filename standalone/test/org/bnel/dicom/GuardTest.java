@@ -17,6 +17,18 @@ final class GuardTest {
         return out;
     }
     static void run() throws Exception {
+        // Burned-in badge cues (metadata only; no OCR).
+        AttributeList sc = list(new int[]{0x00080008}, "DERIVED\\SECONDARY");
+        EngineTest.check(!Cleaner.burnedInHint(sc, SOPClass.SecondaryCaptureImageStorage).isEmpty(), "badge: secondary capture");
+        AttributeList flagged = list(new int[]{0x00280301}, "YES");
+        EngineTest.check(Cleaner.burnedInHint(flagged, SOPClass.CTImageStorage).contains("scanner flags"), "badge: scanner burned-in flag");
+        AttributeList screen = list(new int[]{0x00080008}, "DERIVED\\SECONDARY\\SCREEN SAVE");
+        EngineTest.check(!Cleaner.burnedInHint(screen, SOPClass.CTImageStorage).isEmpty(), "badge: screen save");
+        AttributeList mpr = list(new int[]{0x00080008, 0x00200032}, "DERIVED\\SECONDARY\\MPR", "0\\0\\0");
+        EngineTest.check(Cleaner.burnedInHint(mpr, SOPClass.MRImageStorage).isEmpty(), "badge: MPR reformat with geometry not flagged");
+        EngineTest.check(Cleaner.burnedInHint(list(new int[]{0x00080008}, "ORIGINAL\\PRIMARY"), SOPClass.MRImageStorage).isEmpty(), "badge: primary MR not flagged");
+        EngineTest.check(!Cleaner.isSecondaryCapture("1.2.840.10008.5.1.4.1.1.77.1.4"), "badge: VL photographic is not labelled secondary capture");
+
         AttributeList source = list(new int[]{0x00100010, 0x00100020, 0x00080020, 0x00080080, 0x00080050, 0x00200010},
             "Smith^Mary", "705-693-123", "20260607", "Lakeside General Hospital", "ACC-88123", "4721");
 

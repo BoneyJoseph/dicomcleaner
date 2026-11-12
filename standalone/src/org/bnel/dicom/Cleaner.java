@@ -18,8 +18,10 @@ public final class Cleaner {
     public record Instance(Path source, Path importRoot, Path relativePath, String sha256, String sop, String sopClass, String study,
                            String series, String patientKey, String patientName, String patientId,
                            String modality, int seriesNumber, int instanceNumber, int frames, String description,
-                           String problem, LocalDate studyDate) {
+                           String problem, LocalDate studyDate, String burnedInHint) {
         public boolean supported() { return problem.isEmpty(); }
+        /** Non-empty when the file is likely to carry burned-in text (shown as a badge in the sources tree). */
+        public boolean likelyBurnedIn() { return !burnedInHint.isEmpty(); }
         @Override public String toString() { return String.format("%04d", instanceNumber) + "  " + source.getFileName(); }
     }
     public record Scan(List<Instance> instances, int skipped, List<String> issues) {}
@@ -102,7 +104,7 @@ public final class Cleaner {
                     Policy.value(l,0x0020000d),Policy.value(l,0x0020000e),patientKey,name,id,
                     Policy.value(l,0x00080060),Attribute.getSingleIntegerValueOrDefault(l,TagFromName.SeriesNumber,0),Attribute.getSingleIntegerValueOrDefault(l,TagFromName.InstanceNumber,0),
                     Math.max(1,Attribute.getSingleIntegerValueOrDefault(l,TagFromName.NumberOfFrames,1)),
-                    Policy.value(l,0x0008103e),problem,date));
+                    Policy.value(l,0x0008103e),problem,date,burnedInHint(l,sopClass)));
             } catch (Exception e) {
                 if (e instanceof CancellationException) throw e;
                 // Show names locally to let the operator locate failures, never include these in reports.
@@ -203,6 +205,22 @@ public final class Cleaner {
             progress.update("Metadata ready",inputs.size(),inputs.size());return batch;
         }catch(Throwable e){try{batch.close();}catch(IOException cleanup){e.addSuppressed(cleanup);}throw e;}
     }
+    /**
+     * Why a file is likely to contain burned-in text, or "" when there is no indication. There is no OCR:
+     * these are metadata cues only. MPR/reformat images (DERIVED\SECONDARY with patient geometry) are not
+     * flagged, to keep the badge meaningful.
+     */
+    static String burnedInHint(AttributeList l,String sopClass){
+        List<String> why=new ArrayList<>();
+        if(Policy.value(l,0x00280301).strip().equalsIgnoreCase("YES"))why.add("scanner flags burned-in annotation");
+        if(isSecondaryCapture(sopClass))why.add("secondary capture (screenshot, report or dose page)");
+        Attribute imageType=l.get(TagFromName.ImageType);
+        String type="\\"+(imageType==null?"":imageType.getDelimitedStringValuesOrEmptyString()).toUpperCase(Locale.ROOT)+"\\";
+        if(type.contains("SCREEN SAVE")||type.contains("SCREENSHOT"))why.add("Image Type says screen save");
+        else if(type.contains("\\SECONDARY\\")&&l.get(TagFromName.ImagePositionPatient)==null&&!isSecondaryCapture(sopClass))why.add("secondary image without patient position");
+        return String.join("; ",why);
+    }
+    static boolean isSecondaryCapture(String sop){return sop.equals("1.2.840.10008.5.1.4.1.1.7")||sop.startsWith("1.2.840.10008.5.1.4.1.1.7.");}
     static String seriesLabel(Instance i){String d=i.description()==null||i.description().isBlank()?"(no series description)":i.description();return i.modality()+" · "+d+" · series "+i.seriesNumber();}
     private static String reason(Exception e){return e instanceof IllegalArgumentException||e instanceof IOException?String.valueOf(e.getMessage()):"Could not process this instance ("+e.getClass().getSimpleName()+")";}
     private static void validateMetadata(AttributeList l, Policy.Options options, LocalDate date, Map<String,String> expectedUids) throws Exception {
