@@ -10,7 +10,7 @@ import java.util.*;
 
 /** Local, conservative metadata policy for the explicitly supported image/REG SOP classes. */
 public final class Policy {
-    public static final String VERSION = "0.3.0";
+    public static final String VERSION = "0.4.0";
     public enum DateMode { FIXED, RANDOM }
     public record Options(String patientName, String patientId, DateMode dateMode, LocalDate targetDate, boolean minimal, Map<java.nio.file.Path,LocalDate> folderDates, boolean keepSiemensDiffusion) {
         public Options(String name,String id,DateMode mode,LocalDate date){this(name,id,mode,date,false,Map.of());}

@@ -5,7 +5,7 @@ import argparse, hashlib, json, os, platform, shutil, subprocess, tarfile, urlli
 
 ROOT = Path(__file__).resolve().parent
 BUILD, VENDOR = ROOT / 'build', ROOT / 'vendor'
-VERSION = '1.1.0'
+VERSION = '1.2.0'
 ARCHIVES = {
     'binaryrelease': '3b6c05abcf271aea226790f34655cc4091f1fa6943dda2ed225baadcaf748f74',
     'dependencyrelease': 'c2b45f23758d2ef8663aba6f03cec2ea5635ee498381fb700b53ccc4e1c0a51a',
